@@ -1,3 +1,6 @@
+#ifndef TIMERUTIL
+#define TIMERUTIL
+
 #ifdef _WIN32
 #ifdef __cplusplus
 extern "C" {
@@ -89,3 +92,5 @@ class timerutil {
 #endif
 #endif
 };
+
+#endif

@@ -74,6 +74,7 @@
    </attribute>
    <addaction name="actionOpenFile"/>
    <addaction name="actionZoomToExtent"/>
+   <addaction name="action" />
   </widget>
   <action name="actionOpenFile">
    <property name="icon">

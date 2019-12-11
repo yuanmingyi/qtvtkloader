@@ -33,7 +33,7 @@ static void Callback(vtkObject* caller, long unsigned int eventId, void* clientD
     auto renderer = static_cast<vtkRenderer*>(caller);
     auto inst = static_cast<VtkObjLoader*>(clientData);
     if (inst && inst->GetCallback()) {
-        inst->GetCallback()(renderer);
+        inst->GetCallback()(renderer, inst->GetCallbackStatusData());
     }
 }
 
@@ -86,9 +86,10 @@ VtkObjLoader::~VtkObjLoader()
 
 }
 
-void VtkObjLoader::SetCallback(VtkObjLoader::RenderEventCallback callback)
+void VtkObjLoader::SetCallback(VtkObjLoader::RenderEventCallback callback, void* statusData)
 {
     this->m_callback = callback;
+    this->m_statusData = statusData;
 }
 
 void VtkObjLoader::RemoveObjects()

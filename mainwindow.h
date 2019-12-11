@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QLineEdit>
 
 namespace Ui {
 class MainWindow;
@@ -31,6 +32,7 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+    QLineEdit *edit;
 };
 
 #endif // MAINWINDOW_H

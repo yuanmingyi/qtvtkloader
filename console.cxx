@@ -5,7 +5,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkRenderer.h>
 
-void cb(vtkRenderer* renderer)
+void cb(vtkRenderer* renderer, void* statusData)
 {
     double ts = renderer->GetLastRenderTimeInSeconds();
     double fps = 1.0 / ts;
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     vtkNew<vtkRenderWindow> renWin;
     vtkNew<vtkRenderWindowInteractor> iren;
 
-    loader->SetCallback(cb);
+    loader->SetCallback(cb, nullptr);
     loader->AddObjects(objPath, loadTimes);
 
     timerutil tm;
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     iren->SetRenderWindow(renWin);
     renWin->Render();
     tm.end();
-    std::cout << "render time: " << tm.msec() << "ms" << std::endl;
+    std::cout << "Render time: " << tm.msec() << "ms" << std::endl;
 
     iren->Start();
 
