@@ -1,6 +1,7 @@
 #ifndef SCENEWIDGET_H
 #define SCENEWIDGET_H
 
+#include <QObject>
 #include "timerutil.h"
 #include "vtk_obj_reader.h"
 #include <QVTKOpenGLNativeWidget.h>

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QLineEdit>
+#include <QObject>
 
 namespace Ui {
 class MainWindow;

@@ -58,6 +58,7 @@ static vtkSmartPointer<vtkActor> ReadObj(const std::string &filepath, double x, 
     std::cout << "\n**Load scene cost " << tm.msec() << "ms" << std::endl;
 
     targetMapper->SetInputData(objReader->GetOutput());
+    targetMapper->ScalarVisibilityOff();
     targetActor->SetMapper(targetMapper);
     targetActor->SetPosition(x, y, z);
 //    targetActor->GetProperty()->SetColor( 1, 1, 1 );
