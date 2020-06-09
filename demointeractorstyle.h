@@ -36,50 +36,44 @@
 class DemoInteractorStyle : public vtkInteractorStyleTrackballCamera
 {
 public:
-    enum FocusedStyle
-    {
-        Bound,
-        Center,
-        Origin
-    };
+    static const unsigned long PICK_EVENT = 1;
+
+    typedef void (*EventHandler)(void* caller, unsigned long eid, void* clientData, void* calldata);
 
     static DemoInteractorStyle* New();
     vtkTypeMacro(DemoInteractorStyle, vtkInteractorStyleTrackballCamera)
 
     DemoInteractorStyle();
+    ~DemoInteractorStyle() override;
 
+    void SetActors(const std::vector<vtkActor*>& actors) { if (this->_actors != actors) { this->_actors = actors; } }
     void Initialize();
-    void SliderChangeEventCallback();
     void PickEventCallback();
+    void PickActor(int actorIndex);
+    void SetSelectedVisible(bool visible = true);
+    void SetUnselectedVisible(bool visible = true);
+    void SetSelectedOpacity(double opacity);
+    void SetUnselectedOpacity(double opacity);
 
     // implements vtkInteractorStyleTrackballCamera
     virtual void OnChar() override;
 
     virtual void OnKeyPress() override;
 
+    EventHandler pickEventHandler;
+    void* pickEventClientData;
+
 private:
+    std::vector<vtkActor*> _actors;
     vtkActor* _selectedActor;
-    vtkNew<vtkLODActor> _focusedActor;
-    vtkNew<vtkSphereSource> _sphereSource;
-    vtkNew<vtkPolyDataMapper> _sphereMapper;
-    vtkNew<vtkAxesActor> _axes;
     vtkNew<vtkProperty> _selectedActorProperty;
     vtkNew<CameraAnimationCue> _cameraCue;
     double _opacity;
-
-    FocusedStyle _focusedStyle;
 
     void ReserveCamera();
     void RestoreCamera();
     void StartCameraAnimation();
     void PickActor(vtkActor* actor);
-    void SetSelectedVisible(bool visible = true);
-    void SetUnselectedVisible(bool visible = true);
-    void UpdateFocusActor();
-    void SetupPointFocusedActor(double *pt);
-    void SetupBoundFocusedActor();
 };
-
-vtkStandardNewMacro(DemoInteractorStyle);
 
 #endif // DEMOINTERACTORSTYLE_H

@@ -32,32 +32,26 @@
 #include "cameraanimationcue.h"
 #include "vtksys/SystemTools.hxx"
 
+
+vtkStandardNewMacro(DemoInteractorStyle);
+
 DemoInteractorStyle::DemoInteractorStyle()
 {
+    pickEventHandler = nullptr;
+    pickEventClientData = nullptr;
     _selectedActor = nullptr;
-    _sphereSource->SetRadius(10);
-    _sphereMapper->SetInputConnection(_sphereSource->GetOutputPort());
-    _focusedStyle = FocusedStyle::Bound;
     _opacity = 1;
 }
 
-static std::vector<vtkActor*> actorArray;
+DemoInteractorStyle::~DemoInteractorStyle()
+{
+    pickEventHandler = nullptr;
+}
 
 void DemoInteractorStyle::Initialize()
 {
-    this->DefaultRenderer->AddActor(_focusedActor);
-    this->DefaultRenderer->AddActor(_axes);
-
     auto picker = this->Interactor->GetPicker();
     picker->AddObserver(vtkCommand::PickEvent, this, &DemoInteractorStyle::PickEventCallback);
-
-
-    _axes->SetTotalLength(2, 2, 2);
-    _axes->SetShaftType(0);
-    _axes->SetCylinderRadius(0.02);
-    _axes->GetXAxisCaptionActor2D()->SetWidth(0.03);
-    _axes->GetYAxisCaptionActor2D()->SetWidth(0.03);
-    _axes->GetZAxisCaptionActor2D()->SetWidth(0.03);
 
     _cameraCue->SetTimeModeToNormalized();
     _cameraCue->SetStartTime(0);
@@ -73,15 +67,15 @@ void DemoInteractorStyle::PickEventCallback()
     if (actor)
     {
         std::cout << "pick actor: " << actor->GetProperty()->GetInformation() << std::endl;
-        for (size_t i = 0; i < actorArray.size(); i++)
+        for (size_t i = 0; i < this->_actors.size(); i++)
         {
-            if (actorArray[i] == actor)
+            if (this->_actors[i] == actor)
             {
                 std::cout << "actor id: " << i << std::endl;
+                this->PickActor(static_cast<int>(i));
                 break;
             }
         }
-        PickActor(actor);
     }
 }
 
@@ -111,12 +105,7 @@ void DemoInteractorStyle::OnKeyPress()
 
     try
     {
-        unsigned int idx = static_cast<unsigned int>(std::stoul(key));
-        if (idx < actorArray.size())
-        {
-            std::cout << "pick actor: " << idx << std::endl;
-            PickActor(actorArray[idx]);
-        }
+        this->PickActor(std::stoi(key));
     }
     catch(std::exception)
     {
@@ -124,76 +113,49 @@ void DemoInteractorStyle::OnKeyPress()
         {
             // unselect the actor
             std::cout << "unselect" << std::endl;
-            PickActor(nullptr);
+            this->PickActor(-1);
         }
         else if (key == "h")
         {
             // hide actor
             std::cout << "hide the selected actor" << std::endl;
-            SetSelectedVisible(false);
+            this->SetSelectedVisible(false);
         }
         else if (key == "v")
         {
             // show actor
             std::cout << "show the selected actor" << std::endl;
-            SetSelectedVisible();
+            this->SetSelectedVisible();
         }
         else if (key == "m")
         {
             std::cout << "hide the unselected actors" << std::endl;
-            SetUnselectedVisible(false);
+            this->SetUnselectedVisible(false);
         }
         else if (key == "n")
         {
             std::cout << "show the unselected actors" << std::endl;
-            SetUnselectedVisible();
-        }
-        else if (key == "z")
-        {
-            _focusedStyle = static_cast<FocusedStyle>((_focusedStyle + 1) % 3);
-            std::cout << "Focused Style: " << _focusedStyle << std::endl;
-            UpdateFocusActor();
-        }
-        else if (key == "a")
-        {
-            // select actor from command line
-            std::cout << "Input actor id: ";
-            size_t actorId = 0;
-            std::cin >> actorId;
-            if (actorId < actorArray.size())
-            {
-                std::cout << "pick actor: " << actorId << std::endl;
-                PickActor(actorArray[actorId]);
-            }
-            else
-            {
-                std::cout << "invalid actor id" << std::endl;
-            }
+            this->SetUnselectedVisible();
         }
         else if (key == "space")
         {
             // store camera
-            ReserveCamera();
+            this->ReserveCamera();
         }
         else if (key == "c")
         {
             // recover camera
-            RestoreCamera();
+            this->RestoreCamera();
         }
         else if (key == "o")
         {
-            _opacity -= 0.2;
-            if (_opacity < 0)
+            this->_opacity -= 0.2;
+            if (this->_opacity < 0)
             {
-                _opacity = 1;
+                this->_opacity = 1;
             }
-            std::cout << "opacity: " << _opacity << std::endl;
-            for (size_t i = 0; i < actorArray.size(); i++)
-            {
-                auto actor = actorArray[i];
-                actor->GetProperty()->SetOpacity(_opacity);
-            }
-            this->GetCurrentRenderer()->GetRenderWindow()->Render();
+            std::cout << "opacity: " << this->_opacity << std::endl;
+            this->SetUnselectedOpacity(this->_opacity);
         }
     }
 
@@ -202,21 +164,21 @@ void DemoInteractorStyle::OnKeyPress()
 
 void DemoInteractorStyle::ReserveCamera()
 {
-    _cameraCue->ReserverCamera();
+    this->_cameraCue->ReserverCamera();
 }
 
 void DemoInteractorStyle::RestoreCamera()
 {
-    StartCameraAnimation();
+    this->StartCameraAnimation();
 }
 
 void DemoInteractorStyle::StartCameraAnimation()
 {
-    if (_cameraCue->HasCameraReserved())
+    if (this->_cameraCue->HasCameraReserved())
     {
         vtkNew<vtkAnimationScene> scene;
         scene->RemoveAllCues();
-        scene->AddCue(_cameraCue);
+        scene->AddCue(this->_cameraCue);
         scene->SetModeToRealTime();
         //scene->SetModeToSequence();
         scene->SetLoop(false);
@@ -228,92 +190,85 @@ void DemoInteractorStyle::StartCameraAnimation()
     }
 }
 
+void DemoInteractorStyle::SetSelectedOpacity(double opacity)
+{
+    if (this->_selectedActor)
+    {
+        this->_selectedActor->GetProperty()->SetOpacity(opacity);
+        this->GetCurrentRenderer()->GetRenderWindow()->Render();
+    }
+}
+
+void DemoInteractorStyle::SetUnselectedOpacity(double opacity)
+{
+    for (size_t i = 0; i < this->_actors.size(); i++)
+    {
+        auto actor = this->_actors[i];
+        if (actor != this->_selectedActor) {
+            actor->GetProperty()->SetOpacity(opacity);
+        }
+    }
+    this->GetCurrentRenderer()->GetRenderWindow()->Render();
+}
+
+void DemoInteractorStyle::PickActor(int actorIndex)
+{
+    vtkActor* actor = nullptr;
+    if (actorIndex >= 0 && static_cast<size_t>(actorIndex) < this->_actors.size()) {
+        std::cout << "pick actor: " << actorIndex << std::endl;
+        actor = this->_actors[static_cast<size_t>(actorIndex)];
+    }
+    this->PickActor(actor);
+
+    if (this->pickEventHandler) {
+        this->pickEventHandler(this, PICK_EVENT, this->pickEventClientData, &actorIndex);
+    }
+}
+
 void DemoInteractorStyle::PickActor(vtkActor* actor)
 {
-    if (_selectedActor)
+    if (this->_selectedActor == actor) {
+        return;
+    }
+
+    if (this->_selectedActor)
     {
         std::cout << "restore the property of last selected actor" << std::endl;
-        _selectedActor->GetProperty()->DeepCopy(_selectedActorProperty);
+        this->_selectedActor->GetProperty()->DeepCopy(this->_selectedActorProperty);
     }
 
     // unselect the previous picked actor
-    _selectedActor = actor;
-    if (_selectedActor)
-    {
-        std::cout << "actor of mtl: " << _selectedActor->GetProperty()->GetMaterialName() << std::endl;
-        _selectedActorProperty->DeepCopy(_selectedActor->GetProperty());
-        _axes->SetPosition(_selectedActor->GetOrigin());
-        _axes->SetVisibility(true);
+    this->_selectedActor = actor;
+    if (this->_selectedActor && this->_selectedActor->GetProperty()) {
+        std::cout << "set color for picked actor" << std::endl;
+        //std::cout << "actor of mtl: " << this->_selectedActor->GetProperty()->GetMaterialName() << std::endl;
+        this->_selectedActorProperty->DeepCopy(this->_selectedActor->GetProperty());
+        this->_selectedActor->GetProperty()->SetColor(1.0, 1.0, 0);   // yellow
+        this->_selectedActor->GetProperty()->SetDiffuse(0.5);
+        this->_selectedActor->GetProperty()->SetAmbient(0.3);
+        this->_selectedActor->GetProperty()->SetSpecular(0.1);
+        this->_selectedActor->GetProperty()->SetSpecularColor(1.0, 0.0, 0.0);
+        this->GetCurrentRenderer()->GetRenderWindow()->Render();
     }
-    else
-    {
-        _axes->SetVisibility(false);
-    }
-
-    UpdateFocusActor();
 }
 
 void DemoInteractorStyle::SetSelectedVisible(bool visible)
 {
-    if (_selectedActor)
+    if (this->_selectedActor)
     {
-        _selectedActor->SetVisibility(visible);
+        this->_selectedActor->SetVisibility(visible);
         this->GetCurrentRenderer()->GetRenderWindow()->Render();
     }
 }
 
 void DemoInteractorStyle::SetUnselectedVisible(bool visible)
 {
-    for (auto it = actorArray.begin(); it != actorArray.end(); it++)
+    for (auto it = this->_actors.begin(); it != this->_actors.end(); it++)
     {
-        if (*it != _selectedActor)
+        if (*it != this->_selectedActor)
         {
             (*it)->SetVisibility(visible);
         }
     }
     this->GetCurrentRenderer()->GetRenderWindow()->Render();
 }
-
-void DemoInteractorStyle::UpdateFocusActor()
-{
-    if (_selectedActor)
-    {
-        if (_focusedStyle == FocusedStyle::Bound)
-        {
-            SetupBoundFocusedActor();
-        }
-        else if (_focusedStyle == FocusedStyle::Center)
-        {
-            SetupPointFocusedActor(_selectedActor->GetCenter());
-        }
-        else if (_focusedStyle == FocusedStyle::Origin)
-        {
-            SetupPointFocusedActor(_selectedActor->GetOrigin());
-        }
-        _focusedActor->SetVisibility(true);
-    }
-    else
-    {
-        _focusedActor->SetVisibility(false);
-    }
-
-    this->GetCurrentRenderer()->GetRenderWindow()->Render();
-}
-
-void DemoInteractorStyle::SetupPointFocusedActor(double *pt)
-{
-    _focusedActor->SetMapper(_sphereMapper);
-    _focusedActor->SetPosition(pt);
-    _focusedActor->GetProperty()->SetColor(1.0, 0, 0);
-}
-
-void DemoInteractorStyle::SetupBoundFocusedActor()
-{
-    _focusedActor->SetMapper(_selectedActor->GetMapper());
-    _focusedActor->SetPosition(_selectedActor->GetPosition());
-    _focusedActor->SetOrientation(_selectedActor->GetOrientation());
-    _focusedActor->SetOrigin(_selectedActor->GetOrigin());
-    _focusedActor->GetProperty()->EdgeVisibilityOn();
-    _focusedActor->GetProperty()->SetColor(1, 1, 0);
-}
-

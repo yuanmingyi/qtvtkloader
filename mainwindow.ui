@@ -41,7 +41,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -74,7 +74,6 @@
    </attribute>
    <addaction name="actionOpenFile"/>
    <addaction name="actionZoomToExtent"/>
-   <addaction name="action" />
   </widget>
   <action name="actionOpenFile">
    <property name="icon">
@@ -125,6 +124,7 @@
    </property>
   </action>
  </widget>
+ <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
    <class>SceneWidget</class>
@@ -135,7 +135,6 @@
    </slots>
   </customwidget>
  </customwidgets>
- <layoutdefault spacing="6" margin="11"/>
  <resources>
   <include location="resources.qrc"/>
  </resources>
@@ -184,7 +183,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>399</x>
-     <y>314</y>
+     <y>308</y>
     </hint>
    </hints>
   </connection>
