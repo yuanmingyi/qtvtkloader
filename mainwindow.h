@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QSlider>
+#include <QLabel>
+#include <QCheckBox>
 #include <QObject>
 
 namespace Ui {
@@ -25,7 +28,11 @@ public slots:
     void showOpenFileDialog();
 
     void currentActorChanged(QString);
-    void currentActorChanged(int actorIndex);
+    void currentActorChanged(int);
+
+    void sliderValueChanged(int);
+    void lightIntensityChanged(QString);
+    void showAxesChanged(int);
 
 protected:
     //! Open a file
@@ -37,6 +44,15 @@ protected:
 private:
     Ui::MainWindow *ui;
     QComboBox* actorsComboBox;
+    QSlider* lightIntensitySlider;
+    QLineEdit* lightIntensityEdit;
+    QLabel* statusLabel;
+    QCheckBox* showAxesCheckBox;
+
+    void AddActorComboBox();
+    void AddLightIntensityControl();
+    void AddStatusbarLabel();
+    void AddShowAxesCheckBox();
 };
 
 #endif // MAINWINDOW_H

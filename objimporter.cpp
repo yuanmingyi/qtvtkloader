@@ -4,6 +4,7 @@
 #include <vtkPolyData.h>
 #include <vtkOBJImporter.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkProperty.h>
 #include <vtkActor.h>
 #include <vtkAssembly.h>
 #include <vtkTexture.h>
@@ -48,6 +49,10 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     {
         std::cout << this->_importer->GetOutputDescription(i) << std::endl;
         vtkActor* actor = actors->GetNextActor();
+
+        actor->GetProperty()->SetAmbient(0.5);
+        actor->GetProperty()->SetDiffuse(0.5);
+        actor->GetProperty()->SetSpecular(0.5);
 
         this->_actors.push_back(actor);
 

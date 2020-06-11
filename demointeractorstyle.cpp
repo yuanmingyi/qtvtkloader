@@ -40,6 +40,7 @@ DemoInteractorStyle::DemoInteractorStyle()
     pickEventHandler = nullptr;
     pickEventClientData = nullptr;
     _selectedActor = nullptr;
+    _selectedActorTexture = nullptr;
     _opacity = 1;
 }
 
@@ -215,40 +216,44 @@ void DemoInteractorStyle::PickActor(int actorIndex)
 {
     vtkActor* actor = nullptr;
     if (actorIndex >= 0 && static_cast<size_t>(actorIndex) < this->_actors.size()) {
-        std::cout << "pick actor: " << actorIndex << std::endl;
         actor = this->_actors[static_cast<size_t>(actorIndex)];
     }
+
+    if (this->_selectedActor == actor) {
+        return;
+    }
+
+    std::cout << "pick actor: " << actorIndex << std::endl;
     this->PickActor(actor);
 
     if (this->pickEventHandler) {
         this->pickEventHandler(this, PICK_EVENT, this->pickEventClientData, &actorIndex);
     }
+
+    this->GetCurrentRenderer()->GetRenderWindow()->Render();
 }
 
 void DemoInteractorStyle::PickActor(vtkActor* actor)
 {
-    if (this->_selectedActor == actor) {
-        return;
-    }
-
     if (this->_selectedActor)
     {
         std::cout << "restore the property of last selected actor" << std::endl;
+        this->_selectedActor->SetTexture(this->_selectedActorTexture);
         this->_selectedActor->GetProperty()->DeepCopy(this->_selectedActorProperty);
     }
 
     // unselect the previous picked actor
     this->_selectedActor = actor;
-    if (this->_selectedActor && this->_selectedActor->GetProperty()) {
+    if (this->_selectedActor) {
         std::cout << "set color for picked actor" << std::endl;
         //std::cout << "actor of mtl: " << this->_selectedActor->GetProperty()->GetMaterialName() << std::endl;
         this->_selectedActorProperty->DeepCopy(this->_selectedActor->GetProperty());
+        this->_selectedActorTexture = this->_selectedActor->GetTexture();
+        this->_selectedActor->SetTexture(nullptr);
         this->_selectedActor->GetProperty()->SetColor(1.0, 1.0, 0);   // yellow
-        this->_selectedActor->GetProperty()->SetDiffuse(0.5);
-        this->_selectedActor->GetProperty()->SetAmbient(0.3);
-        this->_selectedActor->GetProperty()->SetSpecular(0.1);
-        this->_selectedActor->GetProperty()->SetSpecularColor(1.0, 0.0, 0.0);
-        this->GetCurrentRenderer()->GetRenderWindow()->Render();
+        this->_selectedActor->GetProperty()->SetDiffuse(0.3);
+        this->_selectedActor->GetProperty()->SetAmbient(0.5);
+        this->_selectedActor->GetProperty()->SetSpecular(0.5);
     }
 }
 

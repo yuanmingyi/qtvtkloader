@@ -67,6 +67,8 @@ private:
     std::vector<vtkActor*> _actors;
     vtkActor* _selectedActor;
     vtkNew<vtkProperty> _selectedActorProperty;
+    vtkNew<vtkAxesActor> _axes;
+    vtkSmartPointer<vtkTexture> _selectedActorTexture;
     vtkNew<CameraAnimationCue> _cameraCue;
     double _opacity;
 

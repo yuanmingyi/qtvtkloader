@@ -24,6 +24,10 @@ public:
     void ImportObj(const QString& fileName);
     const std::vector<vtkActor*> GetActors() const{ return m_objImporter->GetActors(); }
     void PickActor(int index);
+    void SetLightIntensity(double intensity);
+    double* GetActorCenterBounds(int actorIndex, double* bounds = nullptr);
+    void ShowAxes(bool show) { m_axes->SetVisibility(show); }
+    bool IsAxesShown() { return m_axes->GetVisibility(); }
 
 public slots:
     //! Zoom to the extent of the data set in the scene
@@ -36,11 +40,14 @@ private:
     ObjImporter *m_objImporter;
     vtkNew<DemoInteractorStyle> m_demoStyle;
     vtkNew<vtkRenderer> m_renderer;
+    vtkNew<vtkLight> m_light;
+    vtkNew<vtkAxesActor> m_axes;
     timerutil m_tm;
     bool m_startrender;
 
     void ClearProps();
     void RenderProps();
+    void UpdatePickedActor(int actorIndex);
 };
 
 #endif // SCENEWIDGET_H

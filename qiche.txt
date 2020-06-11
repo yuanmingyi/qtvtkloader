@@ -1,0 +1,87 @@
+# assembly format:
+#
+# <AssemblyName> <originX>,<originY>,<originZ>
+# [actorName|assemblyName] [actorName|assemblyName] ...
+# [actorName|assemblyName] ...
+# ...
+#
+# <AssemblyName> <originX>,<originY>,<originZ>
+# [actorName|assemblyName] [actorName|assemblyName] ...
+# 
+
+zuodaofu 57.2314,192.93,73.0309
+actor124
+
+youdaofu -57.2314,192.93,73.0309
+actor87
+
+daofu 0,192.93,73.0309
+zuodaofu youdaofu actor46
+
+changbian 67.3106,257.423,-190.228
+actor156 actor152
+
+duanbian 43.1404,257.423,-190.228
+actor90 actor91
+
+biantianxian 55.2255,257.423,-212.695
+actor151 duanbian changbian
+
+youban 30.3037,223.263,-222.714
+actor36 actor26 actor147
+
+youban1 27.8321,222.979,-219.725
+actor21 youban
+
+zuoban 80.1473,223.263,-222.714
+actor42 actor28 actor88
+
+zuoban1 83.0602,222.979,-219.725
+actor27 zuoban
+
+shengjianggan 55.3623,216.267,-212.457
+actor146 actor144 actor20 actor24 actor32 actor130 actor150
+biantianxian zuoban1 youban1
+
+shengjianggan1 55.3623,193.519,-212.457
+shengjianggan actor135
+
+shengjianggan2 55.3623,182.117,-212.457
+shengjianggan1 actor134
+
+shengjianggan3 55.3623,173.591,-212.457
+shengjianggan2 actor129
+
+shengjianggan4 55.3623,161.985,-212.457
+shengjianggan3 actor133
+
+# assemblies with no animation
+dipan 0,0,0
+actor15
+
+zuoqianlun 0,0,0
+actor82 actor83 actor86 actor89
+
+youqianlun 0,0,0
+actor74 actor79 actor80 actor81
+
+zuohoulun 0,0,0
+actor77 actor78 actor84 actor85
+
+youhoulun 0,0,0
+actor70 actor73 actor75 actor76
+
+luntai 0,0,0
+zuoqianlun youqianlun zuohoulun youhoulun
+
+zuojigui 0,0,0
+actor4 actor5
+
+youjigui1 0,0,0
+actor9 actor10
+
+youjigui2 0,0,0
+actor8 actor12 actor13
+
+youjigui3 0,0,0
+actor11 actor14
