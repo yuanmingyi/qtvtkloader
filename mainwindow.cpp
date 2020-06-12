@@ -73,8 +73,8 @@ void MainWindow::AddActorComboBox()
     actorsComboBox->setStyleSheet("color:black;background-color:white");
     ui->toolBar->addWidget(actorsComboBox);
 
-    QObject::connect(actorsComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(currentActorChanged(QString)));
-    QObject::connect(ui->sceneWidget, SIGNAL(pickedActorChanged(int)), this, SLOT(currentActorChanged(int)));
+    QObject::connect(actorsComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(currentModuleChanged(QString)));
+    QObject::connect(ui->sceneWidget, SIGNAL(pickedModuleChanged(std::string)), this, SLOT(currentModuleChanged(std::string)));
 }
 
 void MainWindow::AddLightIntensityControl()
@@ -123,39 +123,16 @@ void MainWindow::showAxesChanged(int state)
     ui->sceneWidget->ShowAxes(state == Qt::Checked);
 }
 
-void MainWindow::currentActorChanged(QString actorText)
+void MainWindow::currentModuleChanged(QString moduleName)
 {
-    std::cout << "currentActorChanged(QString): " << actorText.toStdString() << std::endl;
-    if (actorText == "None") {
-        // cancel selection
-        ui->sceneWidget->PickActor(-1);
-    } else {
-        auto idx = actorText.toInt();
-        ui->sceneWidget->PickActor(idx);
-    }
+    qDebug() << "currentActorChanged(QString): " << moduleName << endl;
+    ui->sceneWidget->PickModule(moduleName.toStdString());
 }
 
-void MainWindow::currentActorChanged(int actorIndex)
+void MainWindow::currentModuleChanged(std::string name)
 {
-    qDebug() << "currentActorChanged(int): " << actorIndex << endl;
-    QString actorText = "None";
-    if (actorIndex >= 0) {
-        actorText = QString::number(actorIndex);
-    }
-
-    actorsComboBox->setCurrentText(actorText);
-
-    // update the status label
-    QString status("");
-    double bounds[6];
-    double* center = ui->sceneWidget->GetActorCenterBounds(actorIndex, bounds);
-    if (center != nullptr) {
-        status = QString("Center: (%1,%2,%3), MinX: %4, MaxX: %5, MinY: %6, MaxY: %7, MinZ: %8, MaxZ: %9")
-            .arg(center[0]).arg(center[1]).arg(center[2])
-            .arg(bounds[0]).arg(bounds[1]).arg(bounds[2])
-            .arg(bounds[3]).arg(bounds[4]).arg(bounds[5]);
-    }
-    statusLabel->setText(status);
+    qDebug() << "currentActorChanged(std::string): " << QString::fromStdString(name) << endl;
+    actorsComboBox->setCurrentText(QString::fromStdString(name));
 }
 
 void MainWindow::sliderValueChanged(int value)
@@ -178,10 +155,9 @@ void MainWindow::openFile(const QString &fileName)
 {
     ui->sceneWidget->ImportObj(fileName);
     actorsComboBox->clear();
-    actorsComboBox->addItem("None");
-    const std::vector<vtkActor*>& actors = ui->sceneWidget->GetActors();
-    for (size_t i = 0; i < actors.size(); i++) {
-        actorsComboBox->addItem(QString::number(i));
+    const std::vector<std::string>& items = ui->sceneWidget->GetPickableItems();
+    for (size_t i = 0; i < items.size(); i++) {
+        actorsComboBox->addItem(QString::fromStdString(items[i]));
     }
 }
 

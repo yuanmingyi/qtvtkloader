@@ -6,30 +6,22 @@
 #include <vtkGenericOpenGLRenderWindow.h>
 
 
-// static
-void SceneWidget::CompleteRender(vtkObject* vtkNotUsed(caller), long unsigned int eventId, void* clientData, void* vtkNotUsed(callData))
-{
-    if (eventId == vtkCommand::EndEvent) {
-        auto obj = static_cast<SceneWidget*>(clientData);
-        obj->CompleteRender();
-    }
-}
-
 void SceneWidget::OnPickEvent(void* vtkNotUsed(caller), unsigned long eventId, void* clientData, void* callData)
 {
     if (eventId == DemoInteractorStyle::PICK_EVENT) {
         auto widget = static_cast<SceneWidget*>(clientData);
-        widget->UpdatePickedActor(*static_cast<int*>(callData));
+        auto name = static_cast<std::string*>(callData);
+        widget->pickedModuleChanged(*name);
     }
 }
 
 SceneWidget::SceneWidget(QWidget *parent)
   : QVTKOpenGLNativeWidget(parent)
 {
-    vtkNew<vtkCallbackCommand> callback;
-    callback->SetCallback(SceneWidget::CompleteRender);
-    callback->SetClientData(this);
-    m_renderer->AddObserver(vtkCommand::EndEvent, callback);
+//    vtkNew<vtkCallbackCommand> callback;
+//    callback->SetCallback(SceneWidget::CompleteRender);
+//    callback->SetClientData(this);
+//    m_renderer->AddObserver(vtkCommand::EndEvent, callback);
     m_renderer->SetBackground(.3, .3, .3);
 
     m_light->SetLightTypeToHeadlight();
@@ -59,7 +51,8 @@ SceneWidget::SceneWidget(QWidget *parent)
     m_demoStyle->Initialize();
     m_demoStyle->pickEventHandler = SceneWidget::OnPickEvent;
     m_demoStyle->pickEventClientData = this;
-    m_objImporter = new ObjImporter();
+
+    _dongfeng = new DongfengVis(m_renderer);
 
     resize(800, 600);
 }
@@ -68,19 +61,12 @@ SceneWidget::~SceneWidget()
 {
     m_demoStyle->pickEventHandler = nullptr;
     m_demoStyle->pickEventClientData = nullptr;
-    delete m_objImporter;
+    delete _dongfeng;
 }
 
 void SceneWidget::ImportObj(const QString& filename)
 {
-    // remmove old actors
-    ClearProps();
-    m_tm.start();
-    m_objImporter->Import(filename.toStdString().data());
-    m_demoStyle->SetActors(m_objImporter->GetActors());
-    m_tm.end();
-    std::cout << "Import time: " << m_tm.msec() << "ms" << std::endl;
-    RenderProps();
+    _dongfeng->ImportObj(filename.toStdString());
 }
 
 void SceneWidget::SetLightIntensity(double intensity)
@@ -88,19 +74,6 @@ void SceneWidget::SetLightIntensity(double intensity)
     std::cout << "change intensity: " << intensity << std::endl;
     m_light->SetIntensity(intensity);
     GetInteractor()->Render();
-}
-
-double* SceneWidget::GetActorCenterBounds(int actorIndex, double* bounds)
-{
-    auto actors = m_objImporter->GetActors();
-    if (actorIndex >= 0 && static_cast<size_t>(actorIndex) < actors.size()) {
-        auto actor = actors[static_cast<size_t>(actorIndex)];
-        if (bounds != nullptr) {
-            actor->GetBounds(bounds);
-        }
-        return actor->GetCenter();
-    }
-    return nullptr;
 }
 
 // Slots
@@ -111,55 +84,12 @@ void SceneWidget::zoomToExtent()
     GetInteractor()->Render();
 }
 
-void SceneWidget::PickActor(int index)
+void SceneWidget::PickModule(const std::string &moduleName)
 {
-    m_demoStyle->PickActor(index);
-}
-
-void SceneWidget::CompleteRender()
-{
-    if (m_startrender) {
-        m_startrender = false;
-        m_tm.end();
-        std::cout << "Render time: " << m_tm.msec() << "ms" << std::endl;
-    }
-}
-
-void SceneWidget::ClearProps()
-{
-    auto actors = this->m_objImporter->GetActors();
-    for (auto it = actors.begin(); it != actors.end(); it++) {
-        this->m_renderer->RemoveViewProp(*it);
-    }
-//    auto rootObj = this->m_objImporter->GetRootObject();
-//    this->m_renderer->RemoveViewProp(rootObj);
-    this->GetInteractor()->Render();
-}
-
-void SceneWidget::RenderProps()
-{
-    auto actors= this->m_objImporter->GetActors();
-    for (auto it = actors.begin(); it != actors.end(); it++) {
-        this->m_renderer->AddViewProp(*it);
-    }
-//    auto rootObj = m_objImporter->GetRootObject();
-//    this->m_renderer->AddViewProp(rootObj);
-    this->m_renderer->ResetCamera();
-    m_tm.start();
-    m_startrender = true;
-    this->GetInteractor()->Render();
-}
-
-void SceneWidget::UpdatePickedActor(int actorIndex)
-{
-    vtkNew<vtkTransform> tf;
-    double *center = GetActorCenterBounds(actorIndex);
-    if (center) {
-        std::cout << "actor center: (" << center[0] << ", " << center[1] << ", " << center[2] << ")" << std::endl;
-        tf->Translate(center);
+    if (moduleName != DongfengVis::None) {
+        double color[3] = { 1, 1, 0 };
+        _dongfeng->HighlightOn(moduleName, new DongfengVis::HighlightArguments(color));
     } else {
-        tf->Translate(0, 0, 0);
+        _dongfeng->HighlightOff(DongfengVis::All);
     }
-    this->m_axes->SetUserTransform(tf);
-    this->pickedActorChanged(actorIndex);
 }

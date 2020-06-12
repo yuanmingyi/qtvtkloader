@@ -27,8 +27,8 @@ public slots:
     //! Show the 'Open file...' dialog
     void showOpenFileDialog();
 
-    void currentActorChanged(QString);
-    void currentActorChanged(int);
+    void currentModuleChanged(QString);
+    void currentModuleChanged(std::string);
 
     void sliderValueChanged(int);
     void lightIntensityChanged(QString);

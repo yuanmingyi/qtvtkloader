@@ -14,10 +14,41 @@
 class DongfengVis
 {
 public:
-    DongfengVis();
+    const std::string None = "none";
+    const std::string All = "all";
+    const std::string Daofu = "daofu";
+    const std::string Changbian = "changbian";
+    const std::string Duanbian = "duanbian";
+    const std::string Biantianxian = "biantianxian";
+    const std::string Zuoban = "zuobian";
+    const std::string Youban = "youban";
+    const std::string Zuoban1 = "zuoban1";
+    const std::string Youban1 = "youban1";
+    const std::string Shengjianggan = "shengjianggan";
+    const std::string Shengjianggan1 = "shengjianggan1";
+    const std::string Shengjianggan2 = "shengjianggan2";
+    const std::string Shengjianggan3 = "shengjianggan3";
+    const std::string Shengjianggan4 = "shengjianggan4";
+
+    class HighlightArguments
+    {
+    public:
+        double color[3];
+        double opacity;
+        double ambient;
+        double diffuse;
+        double specular;
+        double specularPower;
+
+        HighlightArguments(const double* color, double opacity = 1.0, double ambient = 0.5, double diffuse = 0.5, double specular = 0.5, double specularPower = 1);
+    };
+
+public:
+    DongfengVis(vtkRenderer* renderer);
     ~DongfengVis();
 
     void ImportObj(const std::string& fileName);
+
     void RotateDaofu(double);
     void RotateChangbian(double);
     void RotateDuanbian(double);
@@ -32,21 +63,26 @@ public:
     void LiftShengjianggan3(double);
     void LiftShengjianggan4(double);
 
+    void HighlightOn(const std::string& moduleName, const HighlightArguments& args);
+    void HighlightOff(const std::string& moduleName);
+
+    bool IsModuleHighlightOn(const std::string moduleName) { return _highlightFlags[moduleName]; }
+    const std::vector<std::string>& GetModuleNames() const { return _moduleNames; }
+
 private:
-    vtkNew<vtkRenderer> _renderer;
+    vtkRenderer* _renderer;
     timerutil _tm;
     bool _startrender;
 
     ObjImporter *_objImporter;
-    std::vector<vtkActor*> _actors;
-    vtkActor* _selectedActor;
-    vtkNew<vtkProperty> _selectedActorProperty;
-    vtkNew<vtkAxesActor> _axes;
-    vtkSmartPointer<vtkTexture> _selectedActorTexture;
-    vtkNew<CameraAnimationCue> _cameraCue;
-    vtkSmartPointer<vtkAssembly> _objRoot;
-    std::map<std::string, vtkSmartPointer<vtkAssembly>> _assemblyMap;
+    std::map<vtkActor*, vtkSmartPointer<vtkProperty>> _properties;
+    std::map<vtkActor*, vtkSmartPointer<vtkTexture>> _textures;
+    std::map<std::string, bool> _highlightFlags;
+    std::vector<std::string> _moduleNames;
 
+    vtkNew<CameraAnimationCue> _cameraCue;
+
+    void UpdateActorProperties();
     void ClearProps();
     void RenderProps();
 };
