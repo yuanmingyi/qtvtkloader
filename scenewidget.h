@@ -11,7 +11,7 @@ class SceneWidget : public QVTKOpenGLNativeWidget
 {
     Q_OBJECT
 public:
-    static void OnPickEvent(void* caller, unsigned long eventId, void* clientData, void* callData);
+    static void RendererEventHandler(vtkObject* caller, unsigned long eventId, void* clientData, void* callData);
 
     explicit SceneWidget(QWidget *parent = nullptr);
     ~SceneWidget();
@@ -37,6 +37,7 @@ private:
     vtkNew<vtkRenderer> m_renderer;
     vtkNew<vtkLight> m_light;
     vtkNew<vtkAxesActor> m_axes;
+    timerutil m_tm;
 
     void UpdatePickedActor(int actorIndex);
 };

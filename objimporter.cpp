@@ -91,6 +91,7 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
             this->_objRoot->AddPart(it->second);
         }
     }
+    this->_assemblyMap["all"] = this->_objRoot;
 }
 
 bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configfile)

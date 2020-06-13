@@ -8,9 +8,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # List source files & resources
 file (GLOB_RECURSE Sources
-    main.cpp mainwindow.cpp scenewidget.cpp vtk_obj_reader.cpp demointeractorstyle.cpp cameraanimationcue.cpp objimporter.cpp dongfengvis.cpp)
+    main.cpp mainwindow.cpp scenewidget.cpp vtk_obj_reader.cpp demointeractorstyle.cpp cameraanimationcue.cpp objimporter.cpp dongfengvis.cpp dongfenganimation.cpp animationsceneobserver.cpp dongfenganimationcue.cpp)
 file (GLOB_RECURSE Headers
-    mainwindow.h scenewidget.h timerutil.h vtk_obj_reader.h demointeractorstyle.h cameraanimationcue.h objimporter.h stringutil.h dongfengvis.h)
+    mainwindow.h scenewidget.h timerutil.h vtk_obj_reader.h demointeractorstyle.h cameraanimationcue.h objimporter.h stringutil.h dongfengvis.h dongfenganimation.h animationsceneobserver.h dongfenganimationcue.h)
 file (GLOB_RECURSE Resources *.qrc)
 file (GLOB_RECURSE UIs *.ui)
 

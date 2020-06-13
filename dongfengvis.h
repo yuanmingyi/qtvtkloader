@@ -9,26 +9,25 @@
 #include <vtkAxesActor.h>
 #include "cameraanimationcue.h"
 #include "objimporter.h"
-#include "timerutil.h"
 
 class DongfengVis
 {
 public:
-    const std::string None = "none";
-    const std::string All = "all";
-    const std::string Daofu = "daofu";
-    const std::string Changbian = "changbian";
-    const std::string Duanbian = "duanbian";
-    const std::string Biantianxian = "biantianxian";
-    const std::string Zuoban = "zuobian";
-    const std::string Youban = "youban";
-    const std::string Zuoban1 = "zuoban1";
-    const std::string Youban1 = "youban1";
-    const std::string Shengjianggan = "shengjianggan";
-    const std::string Shengjianggan1 = "shengjianggan1";
-    const std::string Shengjianggan2 = "shengjianggan2";
-    const std::string Shengjianggan3 = "shengjianggan3";
-    const std::string Shengjianggan4 = "shengjianggan4";
+    static const std::string None;
+    static const std::string All;
+    static const std::string Daofu;
+    static const std::string Changbian;
+    static const std::string Duanbian;
+    static const std::string Biantianxian;
+    static const std::string Zuoban;
+    static const std::string Youban;
+    static const std::string Zuoban1;
+    static const std::string Youban1;
+    static const std::string Shengjianggan;
+    static const std::string Shengjianggan1;
+    static const std::string Shengjianggan2;
+    static const std::string Shengjianggan3;
+    static const std::string Shengjianggan4;
 
     class HighlightArguments
     {
@@ -47,8 +46,16 @@ public:
     DongfengVis(vtkRenderer* renderer);
     ~DongfengVis();
 
+    // load obj data from file
     void ImportObj(const std::string& fileName);
 
+    // predefine animations
+    void AnimateOpenDaofu();
+    void AnimateCloseDaofu();
+    void AnimateOpenBiantianxian();
+    void AnimateCloseBiantianxian();
+
+    // module movement, the arguments have a range of (0, 1) or (-0.5, 0.5)
     void RotateDaofu(double);
     void RotateChangbian(double);
     void RotateDuanbian(double);
@@ -63,28 +70,36 @@ public:
     void LiftShengjianggan3(double);
     void LiftShengjianggan4(double);
 
+    // highlight the given module on and the other module off
+    void Highlight(const std::string& moduleName, const HighlightArguments& args);
+
+    // turn the highlight state of indicated module on with the given arguments
     void HighlightOn(const std::string& moduleName, const HighlightArguments& args);
+
+    // turn the highlight state of indicated module off
     void HighlightOff(const std::string& moduleName);
 
+    // return the highlight state associated with the module name
     bool IsModuleHighlightOn(const std::string moduleName) { return _highlightFlags[moduleName]; }
+
+    // return all the available modules' name
     const std::vector<std::string>& GetModuleNames() const { return _moduleNames; }
 
 private:
     vtkRenderer* _renderer;
-    timerutil _tm;
-    bool _startrender;
 
     ObjImporter *_objImporter;
     std::map<vtkActor*, vtkSmartPointer<vtkProperty>> _properties;
-    std::map<vtkActor*, vtkSmartPointer<vtkTexture>> _textures;
+    std::map<vtkActor*, vtkTexture*> _textures;
     std::map<std::string, bool> _highlightFlags;
     std::vector<std::string> _moduleNames;
 
     vtkNew<CameraAnimationCue> _cameraCue;
 
-    void UpdateActorProperties();
+    void SaveActorProperties();
     void ClearProps();
-    void RenderProps();
+    void AddProps();
+    void ClearTextures();
 };
 
 #endif // DONGFENGVIS_H

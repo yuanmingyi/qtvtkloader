@@ -1,9 +1,27 @@
-#include "dongfengvis.h"
 #include <vtkMath.h>
 #include <vtkTransform.h>
 #include <vtkProp3DCollection.h>
 #include <vtkActor.h>
 #include <vtkTexture.h>
+#include <vtkAnimationScene.h>
+#include "dongfenganimation.h"
+#include "dongfengvis.h"
+
+const std::string DongfengVis::None = "none";
+const std::string DongfengVis::All = "all";
+const std::string DongfengVis::Daofu = "daofu";
+const std::string DongfengVis::Changbian = "changbian";
+const std::string DongfengVis::Duanbian = "duanbian";
+const std::string DongfengVis::Biantianxian = "biantianxian";
+const std::string DongfengVis::Zuoban = "zuobian";
+const std::string DongfengVis::Youban = "youban";
+const std::string DongfengVis::Zuoban1 = "zuoban1";
+const std::string DongfengVis::Youban1 = "youban1";
+const std::string DongfengVis::Shengjianggan = "shengjianggan";
+const std::string DongfengVis::Shengjianggan1 = "shengjianggan1";
+const std::string DongfengVis::Shengjianggan2 = "shengjianggan2";
+const std::string DongfengVis::Shengjianggan3 = "shengjianggan3";
+const std::string DongfengVis::Shengjianggan4 = "shengjianggan4";
 
 DongfengVis::HighlightArguments::HighlightArguments(const double* color, double opacity, double ambient, double diffuse, double specular, double specularPower)
 {
@@ -21,10 +39,13 @@ DongfengVis::DongfengVis(vtkRenderer* renderer)
 {
     _objImporter = new ObjImporter;
     _renderer = renderer;
+    _renderer->Register(nullptr);
 }
 
 DongfengVis::~DongfengVis()
 {
+    _renderer->UnRegister(nullptr);
+    ClearTextures();
     delete _objImporter;
 }
 
@@ -32,12 +53,65 @@ void DongfengVis::ImportObj(const std::string& filename)
 {
     // remmove old actors
     ClearProps();
-    _tm.start();
     _objImporter->Import(filename.data());
-    UpdateActorProperties();
-    _tm.end();
-    std::cout << "Import time: " << _tm.msec() << "ms" << std::endl;
-    RenderProps();
+    SaveActorProperties();
+    AddProps();
+}
+
+void DongfengVis::AnimateOpenDaofu()
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderWindow(_renderer->GetRenderWindow());
+    animation->Add([this](double value) { this->RotateDaofu(std::move(value)); }, 0, 1);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateCloseDaofu()
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderWindow(_renderer->GetRenderWindow());
+    animation->Add([this](double value) { this->RotateDaofu(std::move(value)); }, 1, 0);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateOpenBiantianxian()
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderWindow(_renderer->GetRenderWindow());
+    animation->Add([this](double value) { this->RotateChangbian(std::move(value)); }, 0, 1);
+    animation->Add([this](double value) { this->RotateDuanbian(std::move(value)); }, 0, 1);
+    animation->Add([this](double value) { this->RotateBiantianxian(std::move(value)); }, 0, 1);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateCloseBiantianxian()
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderWindow(_renderer->GetRenderWindow());
+    animation->Add([this](double value) { this->RotateChangbian(std::move(value)); }, 1, 0);
+    animation->Add([this](double value) { this->RotateDuanbian(std::move(value)); }, 1, 0);
+    animation->Add([this](double value) { this->RotateBiantianxian(std::move(value)); }, 1, 0);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::Highlight(const std::string &moduleName, const HighlightArguments& args)
+{
+    auto assemblyMap = _objImporter->GetAssemblyMap();
+    bool moduleExisted = false;
+    for (auto it = assemblyMap.begin(); it != assemblyMap.end(); it++) {
+        if (it->first != moduleName) {
+            HighlightOff(moduleName);
+        } else {
+            moduleExisted = true;
+        }
+    }
+    if (moduleExisted) {
+        HighlightOn(moduleName, args);
+    }
 }
 
 void DongfengVis::HighlightOn(const std::string& moduleName, const HighlightArguments& args)
@@ -207,32 +281,20 @@ void DongfengVis::LiftShengjianggan4(double rate)
 
 void DongfengVis::ClearProps()
 {
-    auto actors = this->_objImporter->GetActors();
-    for (auto it = actors.begin(); it != actors.end(); it++) {
-        this->_renderer->RemoveViewProp(*it);
-    }
-//    auto rootObj = this->_objImporter->GetRootObject();
-//    this->_renderer->RemoveViewProp(rootObj);
-    _renderer->GetRenderWindow()->Render();
+    auto rootObj = this->_objImporter->GetRootObject();
+    this->_renderer->RemoveViewProp(rootObj);
 }
 
-void DongfengVis::RenderProps()
+void DongfengVis::AddProps()
 {
-    auto actors= this->_objImporter->GetActors();
-    for (auto it = actors.begin(); it != actors.end(); it++) {
-        this->_renderer->AddViewProp(*it);
-    }
-//    auto rootObj = _objImporter->GetRootObject();
-//    this->_renderer->AddViewProp(rootObj);
-    this->_renderer->ResetCamera();
-    _tm.start();
-    _startrender = true;
-    _renderer->GetRenderWindow()->Render();
+    auto rootObj = _objImporter->GetRootObject();
+    this->_renderer->AddViewProp(rootObj);
 }
 
-void DongfengVis::UpdateActorProperties()
+void DongfengVis::SaveActorProperties()
 {
     _properties.clear();
+    ClearTextures();
     _textures.clear();
     _moduleNames.clear();
     _highlightFlags.clear();
@@ -241,11 +303,22 @@ void DongfengVis::UpdateActorProperties()
         auto prop = vtkSmartPointer<vtkProperty>::New();
         prop->DeepCopy((*it)->GetProperty());
         _properties[*it] = prop;
-        _textures[*it] = (*it)->GetTexture();
+        auto texture = (*it)->GetTexture();
+        texture->Register(nullptr);
+        _textures[*it] = texture;
     }
     auto modules = _objImporter->GetAssemblyMap();
     for (auto it = modules.begin(); it != modules.end(); it++) {
         _moduleNames.push_back(it->first);
         _highlightFlags[it->first] = false;
     }
+}
+
+void DongfengVis::ClearTextures()
+{
+    for (auto it = _textures.begin(); it != _textures.end(); it++) {
+        auto texture = it->second;
+        texture->UnRegister(nullptr);
+    }
+    _textures.clear();
 }
