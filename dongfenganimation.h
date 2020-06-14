@@ -7,7 +7,7 @@
 
 #include "animationsceneobserver.h"
 
-class DongfengAnimation
+class DongfengAnimation : public vtkAnimationScene
 {
 public:
     static DongfengAnimation* New()
@@ -17,15 +17,12 @@ public:
 
     void SetRenderWindow(vtkRenderWindow* renderWindow);
     void Add(std::function<void(double)> updateStateFunc, double startValue, double endValue, double startTime = 0, double endTime = 1);
-    void Play();
-    void Stop();
 
 protected:
     DongfengAnimation();
     ~DongfengAnimation();
 
 private:
-    vtkSmartPointer<vtkAnimationScene> _scene;
     vtkSmartPointer<AnimationSceneObserver> _sceneObserver;
 };
 

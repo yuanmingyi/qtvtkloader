@@ -4,6 +4,7 @@
 #include <vtkActor.h>
 #include <vtkTexture.h>
 #include <vtkAnimationScene.h>
+#include <vtksys/SystemTools.hxx>
 #include "dongfenganimation.h"
 #include "dongfengvis.h"
 
@@ -53,7 +54,9 @@ void DongfengVis::ImportObj(const std::string& filename)
 {
     // remmove old actors
     ClearProps();
-    _objImporter->Import(filename.data());
+    auto configFile = vtksys::SystemTools::GetFilenamePath(filename) + "/" + vtksys::SystemTools::GetFilenameWithoutLastExtension(filename) + ".txt";
+    std::cout << "config file path: " << configFile << std::endl;
+    _objImporter->Import(filename.data(), configFile.data());
     SaveActorProperties();
     AddProps();
 }
@@ -104,7 +107,7 @@ void DongfengVis::Highlight(const std::string &moduleName, const HighlightArgume
     bool moduleExisted = false;
     for (auto it = assemblyMap.begin(); it != assemblyMap.end(); it++) {
         if (it->first != moduleName) {
-            HighlightOff(moduleName);
+            HighlightOff(it->first);
         } else {
             moduleExisted = true;
         }
@@ -295,16 +298,18 @@ void DongfengVis::SaveActorProperties()
 {
     _properties.clear();
     ClearTextures();
-    _textures.clear();
     _moduleNames.clear();
     _highlightFlags.clear();
+    _moduleNames.push_back(DongfengVis::None);
     auto actors = _objImporter->GetActors();
     for (auto it = actors.begin(); it != actors.end(); it++) {
         auto prop = vtkSmartPointer<vtkProperty>::New();
         prop->DeepCopy((*it)->GetProperty());
         _properties[*it] = prop;
         auto texture = (*it)->GetTexture();
-        texture->Register(nullptr);
+        if (texture) {
+            texture->Register(nullptr);
+        }
         _textures[*it] = texture;
     }
     auto modules = _objImporter->GetAssemblyMap();
@@ -318,7 +323,9 @@ void DongfengVis::ClearTextures()
 {
     for (auto it = _textures.begin(); it != _textures.end(); it++) {
         auto texture = it->second;
-        texture->UnRegister(nullptr);
+        if (texture) {
+            texture->UnRegister(nullptr);
+        }
     }
     _textures.clear();
 }

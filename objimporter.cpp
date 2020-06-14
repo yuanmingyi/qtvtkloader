@@ -16,7 +16,6 @@
 ObjImporter::ObjImporter()
 {
     this->_objRoot = nullptr;
-    this->_importer = nullptr;
 }
 
 void ObjImporter::Import(const char* objfile, const char* configfile, bool loadTexture, const char* mtlfile, const char* texturedir)
@@ -24,37 +23,34 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     auto objdir = vtksys::SystemTools::GetFilenamePath(objfile);
     auto objname = vtksys::SystemTools::GetFilenameWithoutLastExtension(objfile);
 
-    this->_importer = vtkSmartPointer<vtkOBJImporter>::New();
-    this->_importer->SetFileName(objfile);
+    vtkNew<vtkOBJImporter> importer;
+    importer->SetFileName(objfile);
 
     if (loadTexture)
     {
         const char *mtlpath = (mtlfile == nullptr) ?
                     (objdir + "/" + objname + ".mtl").data() : mtlfile;
         const char *textpath = (texturedir == nullptr) ? objdir.data() : texturedir;
-        this->_importer->SetFileNameMTL(mtlpath);
-        this->_importer->SetTexturePath(textpath);
+        importer->SetFileNameMTL(mtlpath);
+        importer->SetTexturePath(textpath);
     }
 
-    this->_importer->Update();
+    importer->Update();
 
-    auto actors = this->_importer->GetRenderer()->GetActors();
+    auto actors = importer->GetRenderer()->GetActors();
     actors->InitTraversal();
     int actorCount = actors->GetNumberOfItems();
 
     std::cout << "There are " << actorCount << " actors" << std::endl;
 
-    this->_actors.clear();
+    ClearActors();
     for (int i = 0; i < actorCount; ++i)
     {
-        std::cout << this->_importer->GetOutputDescription(i) << std::endl;
+        std::cout << importer->GetOutputDescription(i) << std::endl;
         vtkActor* actor = actors->GetNextActor();
 
-        actor->GetProperty()->SetAmbient(0.5);
-        actor->GetProperty()->SetDiffuse(0.5);
-        actor->GetProperty()->SetSpecular(0.5);
-
-        this->_actors.push_back(actor);
+        actor->Register(nullptr);
+        _actors.push_back(actor);
 
         // OBJImporter turns texture interpolation off
         auto texture = actor->GetTexture();
@@ -73,25 +69,25 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     // load config
     if (configfile != nullptr)
     {
-        this->LoadConfig(children, configfile);
+        LoadConfig(children, configfile);
     }
 
     // config root object
-    this->_objRoot = vtkSmartPointer<vtkAssembly>::New();
+    _objRoot = vtkSmartPointer<vtkAssembly>::New();
     // update root object
-    for (auto it = this->_actors.begin(); it != this->_actors.end(); it++) {
+    for (auto it = _actors.begin(); it != _actors.end(); it++) {
         if (children.find(*it) == children.end()) {
             // the actor is not a child
-            this->_objRoot->AddPart(*it);
+            _objRoot->AddPart(*it);
         }
     }
-    for (auto it = this->_assemblyMap.begin(); it != this->_assemblyMap.end(); it++) {
+    for (auto it = _assemblyMap.begin(); it != _assemblyMap.end(); it++) {
         if (children.find(it->second) == children.end()) {
             // the assembly is not a child
-            this->_objRoot->AddPart(it->second);
+            _objRoot->AddPart(it->second);
         }
     }
-    this->_assemblyMap["all"] = this->_objRoot;
+    _assemblyMap["all"] = _objRoot;
 }
 
 bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configfile)
@@ -100,10 +96,9 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
     std::string line;
     std::string assemblyName;
     double originX, originY, originZ;
-    std::vector<std::string> tokens;
     vtkSmartPointer<vtkAssembly> assembly = nullptr;
 
-    this->_assemblyMap.clear();
+    _assemblyMap.clear();
     while (!ifs.eof())
     {
         std::getline(ifs, line);
@@ -112,15 +107,18 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
             assembly = nullptr;
             continue;
         }
+        std::cout << "read line: " << line << std::endl;
+        std::vector<std::string> tokens;
         vtksys::SystemTools::Split(line, tokens, ' ');
         if (assembly == nullptr) {
             assembly = vtkSmartPointer<vtkAssembly>::New();
             assemblyName = tokens[0];
-            this->_assemblyMap[assemblyName] = assembly;
-            vtksys::SystemTools::Split(tokens[1], tokens, ',');
-            originX = std::stod(tokens[0]);
-            originY = std::stod(tokens[1]);
-            originZ = std::stod(tokens[2]);
+            _assemblyMap[assemblyName] = assembly;
+            std::vector<std::string> numbers;
+            vtksys::SystemTools::Split(tokens[1], numbers, ',');
+            originX = std::stod(numbers[0]);
+            originY = std::stod(numbers[1]);
+            originZ = std::stod(numbers[2]);
             assembly->SetOrigin(originX, originY, originZ);
             std::cout << "Define assembly: " << assemblyName << " with origin: (" << originX << "," << originY << "," << originZ << ")" << std::endl;
         } else {
@@ -129,12 +127,12 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
                 // check actor
                 if (vtksys::SystemTools::StringStartsWith(*it, "actor")) {
                     size_t index = static_cast<size_t>(std::stoi(it->substr(5)));
-                    assembly->AddPart(this->_actors[index]);
-                    children.insert(this->_actors[index]);
+                    assembly->AddPart(_actors[index]);
+                    children.insert(_actors[index]);
                     std::cout << "\tadd actor " << index << std::endl;
                 } else {
-                    auto childAssembly = this->_assemblyMap.find(*it);
-                    if (childAssembly == this->_assemblyMap.end()) {
+                    auto childAssembly = _assemblyMap.find(*it);
+                    if (childAssembly == _assemblyMap.end()) {
                         // undefined assembly
                         std::cerr << "assembly not defined: " << *it << std::endl;
                         return false;
@@ -154,3 +152,10 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
     return true;
 }
 
+void ObjImporter::ClearActors()
+{
+    for (auto it = _actors.begin(); it != _actors.end(); it++) {
+        (*it)->UnRegister(nullptr);
+    }
+    _actors.clear();
+}

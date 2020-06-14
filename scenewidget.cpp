@@ -6,54 +6,36 @@
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <QDebug>
 
-void SceneWidget::RendererEventHandler(vtkObject* caller, unsigned long eventId, void* vtkNotUsed(clientData), void* vtkNotUsed(callData))
-{
-    auto widget = dynamic_cast<SceneWidget*>(caller);
-    if (eventId == vtkCommand::StartEvent) {
-        qDebug() << "renderer start event" << endl;
-        widget->m_tm.start();
-    } else if (eventId == vtkCommand::EndEvent) {
-        qDebug() << "renderer end event" << endl;
-        widget->m_tm.end();
-        qDebug() << "Render time: " << widget->m_tm.msec() << "ms" << endl;
-    }
-}
-
 SceneWidget::SceneWidget(QWidget *parent)
   : QVTKOpenGLNativeWidget(parent)
 {
-    vtkNew<vtkCallbackCommand> rendererEventHandler;
-    rendererEventHandler->SetCallback(SceneWidget::RendererEventHandler);
-    rendererEventHandler->SetClientData(this);
-    m_renderer->AddObserver(vtkCommand::EndEvent, rendererEventHandler);
-    m_renderer->AddObserver(vtkCommand::StartEvent, rendererEventHandler);
+    _isTiming = false;
+    _renderer->SetBackground(.3, .3, .3);
 
-    m_renderer->SetBackground(.3, .3, .3);
+    _light->SetLightTypeToHeadlight();
+    _light->PositionalOff();
+    _light->SetColor(1, 1, 1);
+    _light->SetIntensity(1);
+    _renderer->AddLight(_light);
 
-    m_light->SetLightTypeToHeadlight();
-    m_light->PositionalOff();
-    m_light->SetColor(1, 1, 1);
-    m_light->SetIntensity(1);
-    m_renderer->AddLight(m_light);
-
-    m_axes->SetVisibility(false);
-    m_axes->SetTotalLength(50, 50, 50);
-    m_axes->SetShaftTypeToLine();
-    m_axes->GetXAxisCaptionActor2D()->SetWidth(0.03);
-    m_axes->GetYAxisCaptionActor2D()->SetWidth(0.03);
-    m_axes->GetZAxisCaptionActor2D()->SetWidth(0.03);
-    m_axes->GetXAxisCaptionActor2D()->GetCaptionTextProperty()->BoldOff();
-    m_axes->GetYAxisCaptionActor2D()->GetCaptionTextProperty()->BoldOff();
-    m_axes->GetZAxisCaptionActor2D()->GetCaptionTextProperty()->BoldOff();
-    m_renderer->AddActor(m_axes);
+    _axes->SetVisibility(false);
+    _axes->SetTotalLength(50, 50, 50);
+    _axes->SetShaftTypeToLine();
+    _axes->GetXAxisCaptionActor2D()->SetWidth(0.03);
+    _axes->GetYAxisCaptionActor2D()->SetWidth(0.03);
+    _axes->GetZAxisCaptionActor2D()->SetWidth(0.03);
+    _axes->GetXAxisCaptionActor2D()->GetCaptionTextProperty()->BoldOff();
+    _axes->GetYAxisCaptionActor2D()->GetCaptionTextProperty()->BoldOff();
+    _axes->GetZAxisCaptionActor2D()->GetCaptionTextProperty()->BoldOff();
+    _renderer->AddActor(_axes);
 
     vtkNew<vtkGenericOpenGLRenderWindow> window;
     auto iren = GetInteractor();
     iren->SetInteractorStyle(vtkInteractorStyleTrackballCamera::New());
     iren->SetRenderWindow(window.Get());
     SetRenderWindow(window.Get());
-    GetRenderWindow()->AddRenderer(m_renderer);
-    _dongfeng = new DongfengVis(m_renderer);
+    GetRenderWindow()->AddRenderer(_renderer);
+    _dongfeng = new DongfengVis(_renderer);
 
     resize(800, 600);
 }
@@ -65,18 +47,17 @@ SceneWidget::~SceneWidget()
 
 void SceneWidget::ImportObj(const QString& filename)
 {
-    m_tm.start();
+    StartTimer();
     _dongfeng->ImportObj(filename.toStdString());
-    m_tm.end();
-    qDebug() << "Import time: " << m_tm.msec() << "ms" << endl;
-    this->m_renderer->ResetCamera();
+    EndTimer("Impoort time:");
+    this->_renderer->ResetCamera();
     GetInteractor()->Render();
 }
 
 void SceneWidget::SetLightIntensity(double intensity)
 {
     std::cout << "change intensity: " << intensity << std::endl;
-    m_light->SetIntensity(intensity);
+    _light->SetIntensity(intensity);
     GetInteractor()->Render();
 }
 
@@ -91,6 +72,30 @@ void SceneWidget::PickModule(const std::string &moduleName)
 void SceneWidget::zoomToExtent()
 {
     std::cout << "zoom to extent" << std::endl;
-    this->m_renderer->ResetCamera();
+    this->_renderer->ResetCamera();
     GetInteractor()->Render();
+}
+
+// private methods
+void SceneWidget::StartTimer()
+{
+    if (!_isTiming) {
+        qDebug() << "start timing" << endl;
+        _tm.start();
+        _isTiming = true;
+    } else {
+        qDebug() << "start failed. Already in timing" << endl;
+    }
+}
+
+void SceneWidget::EndTimer(const QString& context)
+{
+    if (_isTiming) {
+        qDebug() << "end timing" << endl;
+        _isTiming = false;
+        _tm.end();
+        qDebug() << context << _tm.msec() << "ms" << endl;
+    } else {
+        qDebug() << context << " end timer failed. Not in timing" << endl;
+    }
 }

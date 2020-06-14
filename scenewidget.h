@@ -21,8 +21,8 @@ public:
 
     void PickModule(const std::string& moduleName);
     void SetLightIntensity(double intensity);
-    void ShowAxes(bool show) { m_axes->SetVisibility(show); }
-    bool IsAxesShown() { return m_axes->GetVisibility(); }
+    void ShowAxes(bool show) { _axes->SetVisibility(show); }
+    bool IsAxesShown() { return _axes->GetVisibility(); }
 
 public slots:
     //! Zoom to the extent of the data set in the scene
@@ -32,14 +32,15 @@ signals:
     void pickedModuleChanged(const std::string& moduleName);
 
 private:
-    DongfengVis* _dongfeng;
-    vtkNew<DemoInteractorStyle> m_demoStyle;
-    vtkNew<vtkRenderer> m_renderer;
-    vtkNew<vtkLight> m_light;
-    vtkNew<vtkAxesActor> m_axes;
-    timerutil m_tm;
+    void StartTimer();
+    void EndTimer(const QString& context = "time: ");
 
-    void UpdatePickedActor(int actorIndex);
+    DongfengVis* _dongfeng;
+    vtkNew<vtkRenderer> _renderer;
+    vtkNew<vtkLight> _light;
+    vtkNew<vtkAxesActor> _axes;
+    timerutil _tm;
+    bool _isTiming;
 };
 
 #endif // SCENEWIDGET_H
