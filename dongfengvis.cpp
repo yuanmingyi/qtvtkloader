@@ -36,67 +36,118 @@ DongfengVis::HighlightArguments::HighlightArguments(const double* color, double 
     this->specularPower = specularPower;
 }
 
-DongfengVis::DongfengVis(vtkRenderer* renderer)
+DongfengVis::DongfengVis()
 {
     _objImporter = new ObjImporter;
-    _renderer = renderer;
-    _renderer->Register(nullptr);
+    _renderMethod = nullptr;
+    _opacity = 1.0;
 }
 
 DongfengVis::~DongfengVis()
 {
-    _renderer->UnRegister(nullptr);
     ClearTextures();
     delete _objImporter;
 }
 
-void DongfengVis::ImportObj(const std::string& filename)
+void DongfengVis::SetOpacity(double opacity)
+{
+    _opacity = opacity;
+    auto actors = _objImporter->GetActors();
+    for (auto it = actors.begin(); it != actors.end(); it++) {
+        auto highlightMark = _highlightActorMap.find(*it);
+        if (highlightMark != _highlightActorMap.end() && !highlightMark->second) {
+            // actor is not highlight
+            (*it)->GetProperty()->SetOpacity(_opacity);
+        }
+    }
+}
+
+void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, bool loadTexture)
 {
     // remmove old actors
-    ClearProps();
     auto configFile = vtksys::SystemTools::GetFilenamePath(filename) + "/" + vtksys::SystemTools::GetFilenameWithoutLastExtension(filename) + ".txt";
     std::cout << "config file path: " << configFile << std::endl;
-    _objImporter->Import(filename.data(), configFile.data());
+    auto root = _objImporter->GetRootObject();
+    if (root && renderer) {
+        renderer->RemoveViewProp(root);
+    }
+    _objImporter->Import(filename.data(), configFile.data(), loadTexture);
     SaveActorProperties();
-    AddProps();
+    root = _objImporter->GetRootObject();
+    if (root && renderer) {
+        renderer->AddViewProp(root);
+    }
 }
 
-void DongfengVis::AnimateOpenDaofu()
+void DongfengVis::AnimateDaofu(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderWindow(_renderer->GetRenderWindow());
-    animation->Add([this](double value) { this->RotateDaofu(std::move(value)); }, 0, 1);
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateDaofu(std::move(value)); }, start, end, 0, 1);
     animation->Play();
     animation->Stop();
 }
 
-void DongfengVis::AnimateCloseDaofu()
+void DongfengVis::AnimateBiantianxian(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderWindow(_renderer->GetRenderWindow());
-    animation->Add([this](double value) { this->RotateDaofu(std::move(value)); }, 1, 0);
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateChangbian(std::move(value)); }, start, end);
+    animation->Add([this](double value) { this->RotateDuanbian(std::move(value)); }, start, end);
+    animation->Add([this](double value) { this->RotateBiantianxian(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
 }
 
-void DongfengVis::AnimateOpenBiantianxian()
+void DongfengVis::AnimateZuobanHorizontal(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderWindow(_renderer->GetRenderWindow());
-    animation->Add([this](double value) { this->RotateChangbian(std::move(value)); }, 0, 1);
-    animation->Add([this](double value) { this->RotateDuanbian(std::move(value)); }, 0, 1);
-    animation->Add([this](double value) { this->RotateBiantianxian(std::move(value)); }, 0, 1);
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateZuoban1(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
 }
 
-void DongfengVis::AnimateCloseBiantianxian()
+void DongfengVis::AnimateZuobanVertical()
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderWindow(_renderer->GetRenderWindow());
-    animation->Add([this](double value) { this->RotateChangbian(std::move(value)); }, 1, 0);
-    animation->Add([this](double value) { this->RotateDuanbian(std::move(value)); }, 1, 0);
-    animation->Add([this](double value) { this->RotateBiantianxian(std::move(value)); }, 1, 0);
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, 0, -0.5, 0, 0.25);
+    animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, -0.5, 0.5, 0.25, 0.75);
+    animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, 0.5, 0, 0.75, 1);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateYoubanHorizontal(double start, double end)
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateYouban1(std::move(value)); }, start, end);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateYoubanVertical()
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, 0, -0.5, 0, 0.25);
+    animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, -0.5, 0.5, 0.25, 0.75);
+    animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, 0.5, 0, 0.75, 1);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateShengjianggan(double start, double end)
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->LiftShengjianggan(std::move(value)); }, start, end);
+    animation->Add([this](double value) { this->LiftShengjianggan1(std::move(value)); }, start, end);
+    animation->Add([this](double value) { this->LiftShengjianggan2(std::move(value)); }, start, end);
+    animation->Add([this](double value) { this->LiftShengjianggan3(std::move(value)); }, start, end);
+    animation->Add([this](double value) { this->LiftShengjianggan4(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
 }
@@ -132,6 +183,7 @@ void DongfengVis::HighlightOn(const std::string& moduleName, const HighlightArgu
         actor->GetProperty()->SetSpecular(args.specular);
         actor->GetProperty()->SetSpecularPower(args.specularPower);
         actor->SetTexture(nullptr);
+        _highlightActorMap[actor] = true;
     }
     _highlightFlags[moduleName] = true;
 }
@@ -147,7 +199,9 @@ void DongfengVis::HighlightOff(const std::string &moduleName)
         auto property = _properties.at(actor);
         auto texture = _textures.at(actor);
         actor->GetProperty()->DeepCopy(property);
+        actor->GetProperty()->SetOpacity(_opacity);
         actor->SetTexture(texture);
+        _highlightActorMap[actor] = false;
     }
     _highlightFlags[moduleName] = false;
 }
@@ -158,7 +212,10 @@ void DongfengVis::RotateDaofu(double rate)
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
     std::cout << "rotate daofu for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = daofu->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateX(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
     daofu->SetUserTransform(tf);
 }
 
@@ -168,8 +225,11 @@ void DongfengVis::RotateChangbian(double rate)
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
     std::cout << "rotate changbian for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = changbian->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateZ(degree);
-    changbian->RotateZ(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
+    changbian->SetUserTransform(tf);
 }
 
 void DongfengVis::RotateDuanbian(double rate)
@@ -178,7 +238,10 @@ void DongfengVis::RotateDuanbian(double rate)
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * -90;
     std::cout << "rotate duanbian for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = duanbian->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateZ(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
     duanbian->SetUserTransform(tf);
 }
 
@@ -188,7 +251,10 @@ void DongfengVis::RotateBiantianxian(double rate)
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * -90;
     std::cout << "rotate biantianxian for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = biantianxian->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateX(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
     biantianxian->SetUserTransform(tf);
 }
 
@@ -198,7 +264,10 @@ void DongfengVis::RotateZuoban(double rate)
     auto degree = vtkMath::ClampValue(rate, -0.5, 0.5) * 90;
     std::cout << "rotate zuoban for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = zuoban->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateX(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
     zuoban->SetUserTransform(tf);
 }
 
@@ -208,7 +277,10 @@ void DongfengVis::RotateYouban(double rate)
     auto degree = vtkMath::ClampValue(rate, -0.5, 0.5) * 90;
     std::cout << "rotate youban for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = youban->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateX(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
     youban->SetUserTransform(tf);
 }
 
@@ -218,7 +290,10 @@ void DongfengVis::RotateZuoban1(double rate)
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * -90;
     std::cout << "rotate zuoban1 for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = zuoban1->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateY(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
     zuoban1->SetUserTransform(tf);
 }
 
@@ -228,14 +303,17 @@ void DongfengVis::RotateYouban1(double rate)
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
     std::cout << "rotate youban1 for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
+    double* origin = youban1->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
     tf->RotateY(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
     youban1->SetUserTransform(tf);
 }
 
 void DongfengVis::LiftShengjianggan(double rate)
 {
     auto shengjianggan = _objImporter->GetAssemblyMap().at("shengjianggan");
-    auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 40;
+    auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 10;
     std::cout << "lift shengjianggan for " << distance << std::endl;
     vtkNew<vtkTransform> tf;
     tf->Translate(0, distance, 0);
@@ -255,7 +333,7 @@ void DongfengVis::LiftShengjianggan1(double rate)
 void DongfengVis::LiftShengjianggan2(double rate)
 {
     auto shengjianggan2 = _objImporter->GetAssemblyMap().at("shengjianggan2");
-    auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 100;
+    auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 70;
     std::cout << "lift shengjianggan2 for " << distance << std::endl;
     vtkNew<vtkTransform> tf;
     tf->Translate(0, distance, 0);
@@ -265,7 +343,7 @@ void DongfengVis::LiftShengjianggan2(double rate)
 void DongfengVis::LiftShengjianggan3(double rate)
 {
     auto shengjianggan3 = _objImporter->GetAssemblyMap().at("shengjianggan3");
-    auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 100;
+    auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 80;
     std::cout << "lift shengjianggan3 for " << distance << std::endl;
     vtkNew<vtkTransform> tf;
     tf->Translate(0, distance, 0);
@@ -282,24 +360,13 @@ void DongfengVis::LiftShengjianggan4(double rate)
     shengjianggan4->SetUserTransform(tf);
 }
 
-void DongfengVis::ClearProps()
-{
-    auto rootObj = this->_objImporter->GetRootObject();
-    this->_renderer->RemoveViewProp(rootObj);
-}
-
-void DongfengVis::AddProps()
-{
-    auto rootObj = _objImporter->GetRootObject();
-    this->_renderer->AddViewProp(rootObj);
-}
-
 void DongfengVis::SaveActorProperties()
 {
     _properties.clear();
     ClearTextures();
     _moduleNames.clear();
     _highlightFlags.clear();
+    _highlightActorMap.clear();
     _moduleNames.push_back(DongfengVis::None);
     auto actors = _objImporter->GetActors();
     for (auto it = actors.begin(); it != actors.end(); it++) {
@@ -311,6 +378,7 @@ void DongfengVis::SaveActorProperties()
             texture->Register(nullptr);
         }
         _textures[*it] = texture;
+        _highlightActorMap[*it] = false;
     }
     auto modules = _objImporter->GetAssemblyMap();
     for (auto it = modules.begin(); it != modules.end(); it++) {

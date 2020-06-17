@@ -4,12 +4,14 @@
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
 #include <vtkGenericOpenGLRenderWindow.h>
+#include <QCoreApplication>
 #include <QDebug>
 
 SceneWidget::SceneWidget(QWidget *parent)
   : QVTKOpenGLNativeWidget(parent)
 {
     _isTiming = false;
+    _isFullImported = false;
     _renderer->SetBackground(.3, .3, .3);
 
     _light->SetLightTypeToHeadlight();
@@ -35,7 +37,11 @@ SceneWidget::SceneWidget(QWidget *parent)
     iren->SetRenderWindow(window.Get());
     SetRenderWindow(window.Get());
     GetRenderWindow()->AddRenderer(_renderer);
-    _dongfeng = new DongfengVis(_renderer);
+    _dongfeng = new DongfengVis();
+    _dongfeng->SetRenderMethod([this]() {
+        this->GetInteractor()->Render();
+        QCoreApplication::processEvents();
+    });
 
     resize(800, 600);
 }
@@ -45,12 +51,20 @@ SceneWidget::~SceneWidget()
     delete _dongfeng;
 }
 
-void SceneWidget::ImportObj(const QString& filename)
+void SceneWidget::ImportObj(const QString& filename, bool loadTexture)
 {
     StartTimer();
-    _dongfeng->ImportObj(filename.toStdString());
+    _dongfeng->ImportObj(filename.toStdString(), _renderer, loadTexture);
     EndTimer("Impoort time:");
-    this->_renderer->ResetCamera();
+    _renderer->ResetCamera();
+    qDebug() << "render window: " << GetRenderWindow() << endl;
+    GetInteractor()->Render();
+}
+
+void SceneWidget::SetOpacity(double opacity)
+{
+    std::cout << "set opacity: " << opacity << std::endl;
+    _dongfeng->SetOpacity(opacity);
     GetInteractor()->Render();
 }
 
@@ -58,6 +72,7 @@ void SceneWidget::SetLightIntensity(double intensity)
 {
     std::cout << "change intensity: " << intensity << std::endl;
     _light->SetIntensity(intensity);
+    qDebug() << "render window: " << GetRenderWindow() << endl;
     GetInteractor()->Render();
 }
 
@@ -65,6 +80,7 @@ void SceneWidget::PickModule(const std::string &moduleName)
 {
     double color[3] = { 1, 1, 0 };
     _dongfeng->Highlight(moduleName, DongfengVis::HighlightArguments(color));
+    qDebug() << "render window: " << GetRenderWindow() << endl;
     GetInteractor()->Render();
 }
 
@@ -73,6 +89,7 @@ void SceneWidget::zoomToExtent()
 {
     std::cout << "zoom to extent" << std::endl;
     this->_renderer->ResetCamera();
+    qDebug() << "render window: " << GetRenderWindow() << endl;
     GetInteractor()->Render();
 }
 

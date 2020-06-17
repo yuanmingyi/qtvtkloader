@@ -1,4 +1,5 @@
 #include "dongfenganimationcue.h"
+#include <vtkRenderWindow.h>
 
 DongfengAnimationCue::DongfengAnimationCue()
 {

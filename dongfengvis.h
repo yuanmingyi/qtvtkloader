@@ -7,6 +7,7 @@
 #include <vtkAssembly.h>
 #include <vtkProperty.h>
 #include <vtkAxesActor.h>
+#include <vtkRenderWindow.h>
 #include "cameraanimationcue.h"
 #include "objimporter.h"
 
@@ -43,17 +44,20 @@ public:
     };
 
 public:
-    DongfengVis(vtkRenderer* renderer);
+    DongfengVis();
     ~DongfengVis();
 
     // load obj data from file
-    void ImportObj(const std::string& fileName);
+    void ImportObj(const std::string& fileName, vtkRenderer* renderer, bool loadTexture = true);
 
     // predefine animations
-    void AnimateOpenDaofu();
-    void AnimateCloseDaofu();
-    void AnimateOpenBiantianxian();
-    void AnimateCloseBiantianxian();
+    void AnimateDaofu(double start = 0, double end = 1);
+    void AnimateBiantianxian(double start = 0, double end = 1);
+    void AnimateShengjianggan(double start = 0, double end = 1);
+    void AnimateZuobanHorizontal(double start = 0, double end = 1);
+    void AnimateZuobanVertical();
+    void AnimateYoubanHorizontal(double start = 0, double end = 1);
+    void AnimateYoubanVertical();
 
     // module movement, the arguments have a range of (0, 1) or (-0.5, 0.5)
     void RotateDaofu(double);
@@ -70,6 +74,8 @@ public:
     void LiftShengjianggan3(double);
     void LiftShengjianggan4(double);
 
+    bool IsImported(const std::string& moduleName) { return _highlightFlags.find(moduleName) != _highlightFlags.end(); }
+
     // highlight the given module on and the other module off
     void Highlight(const std::string& moduleName, const HighlightArguments& args);
 
@@ -80,25 +86,30 @@ public:
     void HighlightOff(const std::string& moduleName);
 
     // return the highlight state associated with the module name
-    bool IsModuleHighlightOn(const std::string moduleName) { return _highlightFlags[moduleName]; }
+    bool IsModuleHighlightOn(const std::string moduleName) { return _highlightFlags.at(moduleName); }
 
     // return all the available modules' name
     const std::vector<std::string>& GetModuleNames() const { return _moduleNames; }
 
-private:
-    vtkRenderer* _renderer;
+    // event handler for update the painting system
+    void SetRenderMethod(std::function<void()> method) { _renderMethod = method; }
 
+    double GetOpacity() const { return _opacity; }
+    void SetOpacity(double opacity);
+
+private:
     ObjImporter *_objImporter;
     std::map<vtkActor*, vtkSmartPointer<vtkProperty>> _properties;
+    std::map<vtkActor*, bool> _highlightActorMap;
     std::map<vtkActor*, vtkTexture*> _textures;
     std::map<std::string, bool> _highlightFlags;
     std::vector<std::string> _moduleNames;
+    std::function<void()> _renderMethod;
+    double _opacity;
 
     vtkNew<CameraAnimationCue> _cameraCue;
 
     void SaveActorProperties();
-    void ClearProps();
-    void AddProps();
     void ClearTextures();
 };
 

@@ -15,8 +15,8 @@ public:
         return new DongfengAnimation();
     }
 
-    void SetRenderWindow(vtkRenderWindow* renderWindow);
     void Add(std::function<void(double)> updateStateFunc, double startValue, double endValue, double startTime = 0, double endTime = 1);
+    void SetRenderMethod(std::function<void()> method) { _sceneObserver->SetRenderMethod(method); }
 
 protected:
     DongfengAnimation();

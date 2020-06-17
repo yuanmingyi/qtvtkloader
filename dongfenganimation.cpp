@@ -5,6 +5,7 @@ DongfengAnimation::DongfengAnimation()
 {
     _sceneObserver = vtkSmartPointer<AnimationSceneObserver>::New();
     AddObserver(vtkCommand::AnimationCueTickEvent, _sceneObserver);
+    AddObserver(vtkCommand::EndAnimationCueEvent, _sceneObserver);
     SetModeToRealTime();
     //SetModeToSequence();
     SetLoop(false);
@@ -16,11 +17,6 @@ DongfengAnimation::DongfengAnimation()
 DongfengAnimation::~DongfengAnimation()
 {
 
-}
-
-void DongfengAnimation::SetRenderWindow(vtkRenderWindow* renderWindow)
-{
-    _sceneObserver->SetRenderWindow(renderWindow);
 }
 
 void DongfengAnimation::Add(std::function<void(double)> updateStateFunc, double startValue, double endValue, double startTime, double endTime)

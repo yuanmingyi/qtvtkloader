@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QPushButton>
 #include <QSlider>
 #include <QLabel>
 #include <QCheckBox>
@@ -30,9 +31,20 @@ public slots:
     void currentModuleChanged(QString);
     void currentModuleChanged(std::string);
 
-    void sliderValueChanged(int);
+    void lightSliderValueChanged(int);
     void lightIntensityChanged(QString);
+    void opacitySliderValueChanged(int);
+    void opacityEditTextChanged(QString);
+
     void showAxesChanged(int);
+
+    void animateDaofu();
+    void animateBiantianxian();
+    void animateShengjianggan();
+    void animateZuobanHorizontal();
+    void animateZuobanVertical();
+    void animateYoubanHorizontal();
+    void animateYoubanVertical();
 
 protected:
     //! Open a file
@@ -46,13 +58,31 @@ private:
     QComboBox* actorsComboBox;
     QSlider* lightIntensitySlider;
     QLineEdit* lightIntensityEdit;
+    QSlider* opacitySlider;
+    QLineEdit* opacityEdit;
     QLabel* statusLabel;
     QCheckBox* showAxesCheckBox;
 
+    QPushButton* animateDaofuButton;
+    QPushButton* animateBiantianxianButton;
+    QPushButton* animateShengjiangganButton;
+    QPushButton* animateZuobanHorizontalButton;
+    QPushButton* animateZuobanVerticalButton;
+    QPushButton* animateYoubanHorizontalButton;
+    QPushButton* animateYoubanVerticalButton;
+
+    bool isDaofuOpen;
+    bool isBiantianxianOpen;
+    bool isShengjiangganOpen;
+    bool isZuobanHorizontalOpen;
+    bool isYoubanHorizontalOpen;
+
     void AddActorComboBox();
     void AddLightIntensityControl();
+    void AddOpacityControl();
     void AddStatusbarLabel();
     void AddShowAxesCheckBox();
+    void AddPushButtons();
 };
 
 #endif // MAINWINDOW_H

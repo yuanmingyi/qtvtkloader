@@ -2,6 +2,7 @@
 #define DONGFENGANIMATIONCUE_H
 
 #include <vtkAnimationCue.h>
+#include <vtkRenderWindow.h>
 
 class DongfengAnimationCue: public vtkAnimationCue
 {
@@ -28,6 +29,5 @@ private:
     double _startTime;
     double _endTime;
 };
-
 
 #endif // DONGFENGANIMATIONCUE_H
