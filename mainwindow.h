@@ -30,13 +30,14 @@ public slots:
 
     void currentModuleChanged(QString);
     void currentModuleChanged(std::string);
-
     void lightSliderValueChanged(int);
     void lightIntensityChanged(QString);
     void opacitySliderValueChanged(int);
     void opacityEditTextChanged(QString);
 
     void showAxesChanged(int);
+    void animateHighlightChanged(int);
+    void loadTextureChanged(int);
 
     void animateDaofu();
     void animateBiantianxian();
@@ -45,6 +46,10 @@ public slots:
     void animateZuobanVertical();
     void animateYoubanHorizontal();
     void animateYoubanVertical();
+
+    void setModelColor();
+    void setBackgroundColor();
+    void setHighlightColor();
 
 protected:
     //! Open a file
@@ -62,6 +67,11 @@ private:
     QLineEdit* opacityEdit;
     QLabel* statusLabel;
     QCheckBox* showAxesCheckBox;
+    QCheckBox* animateHighlightCheckBox;
+    QCheckBox* loadTextureCheckBox;
+    QPushButton* setModelColorButton;
+    QPushButton* setHighlightColorButton;
+    QPushButton* setBackgroundColorButton;
 
     QPushButton* animateDaofuButton;
     QPushButton* animateBiantianxianButton;
@@ -76,12 +86,16 @@ private:
     bool isShengjiangganOpen;
     bool isZuobanHorizontalOpen;
     bool isYoubanHorizontalOpen;
+    bool isAnimatePick;
+    bool loadTexture;
 
     void AddActorComboBox();
     void AddLightIntensityControl();
     void AddOpacityControl();
     void AddStatusbarLabel();
     void AddShowAxesCheckBox();
+    void AddAnimateHighlightCheckBox();
+    void AddLoadTextureCheckBox();
     void AddPushButtons();
 };
 

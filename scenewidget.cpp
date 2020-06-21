@@ -12,13 +12,25 @@ SceneWidget::SceneWidget(QWidget *parent)
 {
     _isTiming = false;
     _isFullImported = false;
-    _renderer->SetBackground(.3, .3, .3);
 
     _light->SetLightTypeToHeadlight();
     _light->PositionalOff();
     _light->SetColor(1, 1, 1);
     _light->SetIntensity(1);
     _renderer->AddLight(_light);
+
+    _highlightColor[0] = 1;
+    _highlightColor[1] = 1;
+    _highlightColor[2] = 0;
+
+    _backgroundColor[0] = 0.3;
+    _backgroundColor[1] = 0.3;
+    _backgroundColor[2] = 0.3;
+    _renderer->SetBackground(_backgroundColor);
+
+    _modelColor[0] = 0.7;
+    _modelColor[1] = 0.7;
+    _modelColor[2] = 0.7;
 
     _axes->SetVisibility(false);
     _axes->SetTotalLength(50, 50, 50);
@@ -42,6 +54,7 @@ SceneWidget::SceneWidget(QWidget *parent)
         this->GetInteractor()->Render();
         QCoreApplication::processEvents();
     });
+    _dongfeng->SetColor(_modelColor[0], _modelColor[1], _modelColor[2]);
 
     resize(800, 600);
 }
@@ -57,7 +70,6 @@ void SceneWidget::ImportObj(const QString& filename, bool loadTexture)
     _dongfeng->ImportObj(filename.toStdString(), _renderer, loadTexture);
     EndTimer("Impoort time:");
     _renderer->ResetCamera();
-    qDebug() << "render window: " << GetRenderWindow() << endl;
     GetInteractor()->Render();
 }
 
@@ -72,15 +84,65 @@ void SceneWidget::SetLightIntensity(double intensity)
 {
     std::cout << "change intensity: " << intensity << std::endl;
     _light->SetIntensity(intensity);
-    qDebug() << "render window: " << GetRenderWindow() << endl;
     GetInteractor()->Render();
 }
 
 void SceneWidget::PickModule(const std::string &moduleName)
 {
-    double color[3] = { 1, 1, 0 };
-    _dongfeng->Highlight(moduleName, DongfengVis::HighlightArguments(color));
-    qDebug() << "render window: " << GetRenderWindow() << endl;
+    _dongfeng->Highlight(moduleName, DongfengVis::HighlightArguments(_highlightColor));
+    GetInteractor()->Render();
+}
+
+void SceneWidget::SetHighlightColor(const double* color)
+{
+    SetHighlightColor(color[0], color[1], color[2]);
+}
+
+void SceneWidget::SetHighlightColor(double r, double g, double b)
+{
+    _highlightColor[0] = r;
+    _highlightColor[1] = g;
+    _highlightColor[2] = b;
+    auto modules = _dongfeng->GetModuleNames();
+    for (auto it = modules.begin(); it != modules.end(); it++) {
+        if (_dongfeng->IsModuleHighlightOn(*it)) {
+            _dongfeng->HighlightOn(*it, DongfengVis::HighlightArguments(_highlightColor));
+        }
+    }
+    GetInteractor()->Render();
+}
+
+void SceneWidget::SetModelColor(const double *color)
+{
+    SetModelColor(color[0], color[1], color[2]);
+}
+
+void SceneWidget::SetModelColor(double r, double g, double b)
+{
+    _modelColor[0] = r;
+    _modelColor[1] = g;
+    _modelColor[2] = b;
+    _dongfeng->SetColor(r, g, b);
+    GetInteractor()->Render();
+}
+
+void SceneWidget::SetBackgroundColor(const double *color)
+{
+    SetBackgroundColor(color[0], color[1], color[2]);
+}
+
+void SceneWidget::SetBackgroundColor(double r, double g, double b)
+{
+    _backgroundColor[0] = r;
+    _backgroundColor[1] = g;
+    _backgroundColor[2] = b;
+    _renderer->SetBackground(r, g, b);
+    GetInteractor()->Render();
+}
+
+void SceneWidget::AnimateHighlight(const std::string& moduleName)
+{
+    _dongfeng->AnimateHighlight(moduleName, DongfengVis::HighlightArguments(_highlightColor));
     GetInteractor()->Render();
 }
 
@@ -89,7 +151,6 @@ void SceneWidget::zoomToExtent()
 {
     std::cout << "zoom to extent" << std::endl;
     this->_renderer->ResetCamera();
-    qDebug() << "render window: " << GetRenderWindow() << endl;
     GetInteractor()->Render();
 }
 

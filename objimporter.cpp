@@ -26,12 +26,10 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     vtkNew<vtkOBJImporter> importer;
     importer->SetFileName(objfile);
 
-    if (loadTexture)
-    {
-        const char *mtlpath = (mtlfile == nullptr) ?
-                    (objdir + "/" + objname + ".mtl").data() : mtlfile;
+    const char *mtlpath = (mtlfile == nullptr) ? (objdir + "/" + objname + ".mtl").data() : mtlfile;
+    importer->SetFileNameMTL(mtlpath);
+    if (loadTexture) {
         const char *textpath = (texturedir == nullptr) ? objdir.data() : texturedir;
-        importer->SetFileNameMTL(mtlpath);
         importer->SetTexturePath(textpath);
     }
 

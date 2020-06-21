@@ -41,6 +41,9 @@ DongfengVis::DongfengVis()
     _objImporter = new ObjImporter;
     _renderMethod = nullptr;
     _opacity = 1.0;
+    _color[0] = 1.0;
+    _color[1] = 1.0;
+    _color[2] = 1.0;
 }
 
 DongfengVis::~DongfengVis()
@@ -58,6 +61,20 @@ void DongfengVis::SetOpacity(double opacity)
         if (highlightMark != _highlightActorMap.end() && !highlightMark->second) {
             // actor is not highlight
             (*it)->GetProperty()->SetOpacity(_opacity);
+        }
+    }
+}
+
+void DongfengVis::SetColor(double r, double g, double b)
+{
+    _color[0] = r;
+    _color[1] = g;
+    _color[2] = b;
+    auto actors = _objImporter->GetActors();
+    for (auto it = actors.begin(); it != actors.end(); it++) {
+        auto highlightMark = _highlightActorMap.find(*it);
+        if (highlightMark != _highlightActorMap.end() && !highlightMark->second) {
+            (*it)->GetProperty()->SetColor(r, g, b);
         }
     }
 }
@@ -152,6 +169,24 @@ void DongfengVis::AnimateShengjianggan(double start, double end)
     animation->Stop();
 }
 
+void DongfengVis::AnimateHighlight(const std::string &moduleName, const HighlightArguments& args)
+{
+    vtkNew<DongfengAnimation> animation;
+    Highlight(DongfengVis::None, args);
+    if (_highlightFlags.find(moduleName) == _highlightFlags.end()) {
+        // no module found
+        return;
+    }
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this, moduleName, args](double value) {
+        auto p = 5 * (value < 0.2 ? value : (value < 0.4 ? (0.4 - value) : (value < 0.6 ? (value - 0.4) : (value < 0.8 ? (0.8 - value) : (value - 0.8)))));
+        HighlightArguments intArgs(args.color, args.opacity * p, args.ambient, args.diffuse, args.specular, args.specularPower);
+        this->HighlightOn(moduleName, intArgs);
+    }, 0, 1);
+    animation->Play();
+    animation->Stop();
+}
+
 void DongfengVis::Highlight(const std::string &moduleName, const HighlightArguments& args)
 {
     auto assemblyMap = _objImporter->GetAssemblyMap();
@@ -200,6 +235,7 @@ void DongfengVis::HighlightOff(const std::string &moduleName)
         auto texture = _textures.at(actor);
         actor->GetProperty()->DeepCopy(property);
         actor->GetProperty()->SetOpacity(_opacity);
+        actor->GetProperty()->SetColor(_color);
         actor->SetTexture(texture);
         _highlightActorMap[actor] = false;
     }
@@ -379,6 +415,8 @@ void DongfengVis::SaveActorProperties()
         }
         _textures[*it] = texture;
         _highlightActorMap[*it] = false;
+        (*it)->GetProperty()->SetOpacity(_opacity);
+        (*it)->GetProperty()->SetColor(_color);
     }
     auto modules = _objImporter->GetAssemblyMap();
     for (auto it = modules.begin(); it != modules.end(); it++) {

@@ -59,6 +59,8 @@ public:
     void AnimateYoubanHorizontal(double start = 0, double end = 1);
     void AnimateYoubanVertical();
 
+    void AnimateHighlight(const std::string &moduleName, const HighlightArguments& args);
+
     // module movement, the arguments have a range of (0, 1) or (-0.5, 0.5)
     void RotateDaofu(double);
     void RotateChangbian(double);
@@ -86,7 +88,7 @@ public:
     void HighlightOff(const std::string& moduleName);
 
     // return the highlight state associated with the module name
-    bool IsModuleHighlightOn(const std::string moduleName) { return _highlightFlags.at(moduleName); }
+    bool IsModuleHighlightOn(const std::string moduleName) { return _highlightFlags.find(moduleName) == _highlightFlags.end() ? false : _highlightFlags.at(moduleName); }
 
     // return all the available modules' name
     const std::vector<std::string>& GetModuleNames() const { return _moduleNames; }
@@ -96,6 +98,7 @@ public:
 
     double GetOpacity() const { return _opacity; }
     void SetOpacity(double opacity);
+    void SetColor(double r, double g, double b);
 
 private:
     ObjImporter *_objImporter;
@@ -106,6 +109,7 @@ private:
     std::vector<std::string> _moduleNames;
     std::function<void()> _renderMethod;
     double _opacity;
+    double _color[3];
 
     vtkNew<CameraAnimationCue> _cameraCue;
 

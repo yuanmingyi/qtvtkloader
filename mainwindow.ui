@@ -73,7 +73,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionOpenFile"/>
-   <addaction name="actionZoomToExtent"/>
+   <addaction name="separator"/>
   </widget>
   <action name="actionOpenFile">
    <property name="icon">
@@ -88,18 +88,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
-   </property>
-  </action>
-  <action name="actionZoomToExtent">
-   <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/zoom_to.png</normaloff>:/icons/zoom_to.png</iconset>
-   </property>
-   <property name="text">
-    <string>Zoom to extent</string>
-   </property>
-   <property name="toolTip">
-    <string>Zoom to extent</string>
    </property>
   </action>
   <action name="actionQuit">
@@ -168,22 +156,6 @@
     <hint type="destinationlabel">
      <x>399</x>
      <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>actionZoomToExtent</sender>
-   <signal>triggered()</signal>
-   <receiver>sceneWidget</receiver>
-   <slot>zoomToExtent()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>399</x>
-     <y>308</y>
     </hint>
    </hints>
   </connection>

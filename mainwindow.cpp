@@ -10,6 +10,8 @@
 #include <QLabel>
 #include <QDebug>
 #include <QComboBox>
+#include <QColor>
+#include <QColorDialog>
 #include <float.h>
 
 
@@ -24,6 +26,11 @@ int intensityToSliderValue(double intensity, double scale)
     return static_cast<int>(intensity * scale);
 }
 
+QColor colorToQColor(const double* color)
+{
+    return QColor(static_cast<int>(color[0] * 255), static_cast<int>(color[1] * 255), static_cast<int>(color[2] * 255));
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -34,6 +41,8 @@ MainWindow::MainWindow(QWidget *parent) :
     AddLightIntensityControl();
     AddOpacityControl();
     AddShowAxesCheckBox();
+    AddAnimateHighlightCheckBox();
+    AddLoadTextureCheckBox();
     AddPushButtons();
 }
 
@@ -45,6 +54,9 @@ MainWindow::~MainWindow()
     delete opacitySlider;
     delete opacityEdit;
     delete statusLabel;
+    delete showAxesCheckBox;
+    delete animateHighlightCheckBox;
+    delete loadTextureCheckBox;
     delete animateDaofuButton;
     delete animateBiantianxianButton;
     delete animateShengjiangganButton;
@@ -52,6 +64,9 @@ MainWindow::~MainWindow()
     delete animateZuobanVerticalButton;
     delete animateYoubanHorizontalButton;
     delete animateYoubanVerticalButton;
+    delete setModelColorButton;
+    delete setHighlightColorButton;
+    delete setBackgroundColorButton;
     delete ui;
 }
 
@@ -65,11 +80,33 @@ void MainWindow::AddStatusbarLabel()
 void MainWindow::AddShowAxesCheckBox()
 {
     showAxesCheckBox = new QCheckBox;
-    showAxesCheckBox->setFixedWidth(80);
+    showAxesCheckBox->setFixedWidth(60);
     showAxesCheckBox->setText(tr("Axes"));
     ui->toolBar->addWidget(showAxesCheckBox);
 
     QObject::connect(showAxesCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showAxesChanged(int)));
+}
+
+void MainWindow::AddAnimateHighlightCheckBox()
+{
+    isAnimatePick = false;
+    animateHighlightCheckBox = new QCheckBox;
+    animateHighlightCheckBox->setFixedWidth(80);
+    animateHighlightCheckBox->setText(tr("Animate"));
+    ui->toolBar->addWidget(animateHighlightCheckBox);
+
+    QObject::connect(animateHighlightCheckBox, SIGNAL(stateChanged(int)), this, SLOT(animateHighlightChanged(int)));
+}
+
+void MainWindow::AddLoadTextureCheckBox()
+{
+    loadTexture = false;
+    loadTextureCheckBox = new QCheckBox;
+    loadTextureCheckBox->setFixedWidth(80);
+    loadTextureCheckBox->setText(tr("load Tex"));
+    ui->toolBar->addWidget(loadTextureCheckBox);
+
+    QObject::connect(loadTextureCheckBox, SIGNAL(stateChanged(int)), this, SLOT(loadTextureChanged(int)));
 }
 
 void MainWindow::AddActorComboBox()
@@ -99,7 +136,7 @@ void MainWindow::AddLightIntensityControl()
     ui->toolBar->addWidget(label);
 
     lightIntensitySlider = new QSlider(Qt::Horizontal);
-    lightIntensitySlider->setFixedWidth(100);
+    lightIntensitySlider->setFixedWidth(60);
     lightIntensitySlider->setMaximum(100);
     lightIntensitySlider->setMinimum(1);
     lightIntensitySlider->setValue(10);
@@ -151,6 +188,10 @@ void MainWindow::AddPushButtons()
     animateZuobanVerticalButton = new QPushButton(tr("zuo-v"));
     animateYoubanHorizontalButton = new QPushButton(tr("you-h"));
     animateYoubanVerticalButton = new QPushButton(tr("you-v"));
+    setModelColorButton = new QPushButton(QIcon(QPixmap(40, 40)), tr("model"));
+    setHighlightColorButton = new QPushButton(QIcon(QPixmap(40, 40)), tr("picked"));
+    setBackgroundColorButton = new QPushButton(QIcon(QPixmap(40, 40)), tr("bkg"));
+
     ui->toolBar->addWidget(animateDaofuButton);
     ui->toolBar->addWidget(animateBiantianxianButton);
     ui->toolBar->addWidget(animateShengjiangganButton);
@@ -158,6 +199,19 @@ void MainWindow::AddPushButtons()
     ui->toolBar->addWidget(animateZuobanVerticalButton);
     ui->toolBar->addWidget(animateYoubanHorizontalButton);
     ui->toolBar->addWidget(animateYoubanVerticalButton);
+    ui->toolBar->addWidget(setModelColorButton);
+    ui->toolBar->addWidget(setHighlightColorButton);
+    ui->toolBar->addWidget(setBackgroundColorButton);
+
+
+    setModelColorButton->setEnabled(false);
+    animateDaofuButton->setEnabled(false);
+    animateBiantianxianButton->setEnabled(false);
+    animateShengjiangganButton->setEnabled(false);
+    animateZuobanVerticalButton->setEnabled(false);
+    animateZuobanHorizontalButton->setEnabled(false);
+    animateYoubanVerticalButton->setEnabled(false);
+    animateYoubanHorizontalButton->setEnabled(false);
 
     QObject::connect(animateDaofuButton, SIGNAL(clicked()), this, SLOT(animateDaofu()));
     QObject::connect(animateBiantianxianButton, SIGNAL(clicked()), this, SLOT(animateBiantianxian()));
@@ -166,6 +220,9 @@ void MainWindow::AddPushButtons()
     QObject::connect(animateZuobanVerticalButton, SIGNAL(clicked()), this, SLOT(animateZuobanVertical()));
     QObject::connect(animateYoubanHorizontalButton, SIGNAL(clicked()), this, SLOT(animateYoubanHorizontal()));
     QObject::connect(animateYoubanVerticalButton, SIGNAL(clicked()), this, SLOT(animateYoubanVertical()));
+    QObject::connect(setModelColorButton, SIGNAL(clicked()), this, SLOT(setModelColor()));
+    QObject::connect(setHighlightColorButton, SIGNAL(clicked()), this, SLOT(setHighlightColor()));
+    QObject::connect(setBackgroundColorButton, SIGNAL(clicked()), this, SLOT(setBackgroundColor()));
 }
 
 void MainWindow::showAboutDialog()
@@ -187,10 +244,24 @@ void MainWindow::showAxesChanged(int state)
     ui->sceneWidget->ShowAxes(state == Qt::Checked);
 }
 
+void MainWindow::animateHighlightChanged(int state)
+{
+    isAnimatePick = state == Qt::Checked;
+}
+
+void MainWindow::loadTextureChanged(int state)
+{
+    loadTexture = state == Qt::Checked;
+}
+
 void MainWindow::currentModuleChanged(QString moduleName)
 {
     qDebug() << "currentActorChanged(QString): " << moduleName << endl;
-    ui->sceneWidget->PickModule(moduleName.toStdString());
+    if (isAnimatePick) {
+        ui->sceneWidget->AnimateHighlight(moduleName.toStdString());
+    } else {
+        ui->sceneWidget->PickModule(moduleName.toStdString());
+    }
 }
 
 void MainWindow::currentModuleChanged(std::string name)
@@ -271,9 +342,39 @@ void MainWindow::animateYoubanVertical()
     ui->sceneWidget->AnimateYoubanVertical();
 }
 
+void MainWindow::setModelColor()
+{
+    auto color = ui->sceneWidget->GetModelColor();
+    QColor qColor = QColorDialog::getColor(colorToQColor(color), nullptr, tr("select model color"), QColorDialog::ColorDialogOptions());
+    ui->sceneWidget->SetModelColor(qColor.redF(), qColor.greenF(), qColor.blueF());
+    auto pixmap = QPixmap(40, 40);
+    pixmap.fill(qColor);
+    setModelColorButton->setIcon(QIcon(pixmap));
+}
+
+void MainWindow::setHighlightColor()
+{
+    auto color = ui->sceneWidget->GetHighlightColor();
+    QColor qColor = QColorDialog::getColor(colorToQColor(color), nullptr, tr("select highlight color"), QColorDialog::ColorDialogOptions());
+    ui->sceneWidget->SetHighlightColor(qColor.redF(), qColor.greenF(), qColor.blueF());
+    auto pixmap = QPixmap(40, 40);
+    pixmap.fill(qColor);
+    setHighlightColorButton->setIcon(QIcon(pixmap));
+}
+
+void MainWindow::setBackgroundColor()
+{
+    auto color = ui->sceneWidget->GetBackgroundColor();
+    QColor qColor = QColorDialog::getColor(colorToQColor(color), nullptr, tr("select background color"), QColorDialog::ColorDialogOptions());
+    ui->sceneWidget->SetBackgroundColor(qColor.redF(), qColor.greenF(), qColor.blueF());
+    auto pixmap = QPixmap(40, 40);
+    pixmap.fill(qColor);
+    setBackgroundColorButton->setIcon(QIcon(pixmap));
+}
+
 void MainWindow::openFile(const QString &fileName)
 {
-    ui->sceneWidget->ImportObj(fileName);
+    ui->sceneWidget->ImportObj(fileName, loadTexture);
     actorsComboBox->clear();
     const std::vector<std::string>& items = ui->sceneWidget->GetPickableItems();
     for (size_t i = 0; i < items.size(); i++) {
@@ -284,5 +385,20 @@ void MainWindow::openFile(const QString &fileName)
     isShengjiangganOpen = false;
     isZuobanHorizontalOpen = false;
     isYoubanHorizontalOpen = false;
+    setModelColorButton->setEnabled(true);
+    animateDaofuButton->setEnabled(true);
+    animateBiantianxianButton->setEnabled(true);
+    animateShengjiangganButton->setEnabled(true);
+    animateZuobanVerticalButton->setEnabled(true);
+    animateZuobanHorizontalButton->setEnabled(true);
+    animateYoubanVerticalButton->setEnabled(true);
+    animateYoubanHorizontalButton->setEnabled(true);
+    auto pixmap = QPixmap(40, 40);
+    pixmap.fill(colorToQColor(ui->sceneWidget->GetModelColor()));
+    setModelColorButton->setIcon(QIcon(pixmap));
+    pixmap.fill(colorToQColor(ui->sceneWidget->GetHighlightColor()));
+    setHighlightColorButton->setIcon(QIcon(pixmap));
+    pixmap.fill(colorToQColor(ui->sceneWidget->GetBackgroundColor()));
+    setBackgroundColorButton->setIcon(QIcon(pixmap));
 }
 

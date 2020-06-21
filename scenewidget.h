@@ -16,7 +16,7 @@ public:
     explicit SceneWidget(QWidget *parent = nullptr);
     ~SceneWidget();
 
-    void ImportObj(const QString& fileName, bool loadTexture = true);
+    void ImportObj(const QString& fileName, bool loadTexture = false);
     const std::vector<std::string>& GetPickableItems() const{ return _dongfeng->GetModuleNames(); }
 
     bool IsImported() const { return _isFullImported; }
@@ -26,7 +26,17 @@ public:
     void SetLightIntensity(double intensity);
     void ShowAxes(bool show) { _axes->SetVisibility(show); }
     bool IsAxesShown() { return _axes->GetVisibility(); }
+    void SetHighlightColor(const double* color);
+    void SetHighlightColor(double r, double g, double b);
+    void SetModelColor(const double* color);
+    void SetModelColor(double r, double g, double b);
+    void SetBackgroundColor(const double* color);
+    void SetBackgroundColor(double r, double g, double b);
+    const double* GetHighlightColor() const { return _highlightColor; }
+    const double* GetModelColor() const { return _modelColor; }
+    const double* GetBackgroundColor() const { return _backgroundColor; }
 
+    void AnimateHighlight(const std::string& moduleName);
     void AnimateDaofu(bool open = true) { open ? _dongfeng->AnimateDaofu(0, 1) : _dongfeng->AnimateDaofu(1, 0); }
     void AnimateBiantianxian(bool open = true) { open ? _dongfeng->AnimateBiantianxian(0, 1) : _dongfeng->AnimateBiantianxian(1, 0); }
     void AnimateShengjianggan(bool open = true) { open ? _dongfeng->AnimateShengjianggan(0, 1) : _dongfeng->AnimateShengjianggan(1, 0); }
@@ -53,6 +63,9 @@ private:
     timerutil _tm;
     bool _isTiming;
     bool _isFullImported;
+    double _highlightColor[3];
+    double _modelColor[3];
+    double _backgroundColor[3];
 };
 
 #endif // SCENEWIDGET_H
