@@ -1,6 +1,7 @@
 #ifndef DONGFENGVIS_H
 #define DONGFENGVIS_H
 
+#include <functional>
 #include <vtkSmartPointer.h>
 #include <vtkNew.h>
 #include <vtkActor.h>

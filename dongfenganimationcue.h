@@ -3,6 +3,7 @@
 
 #include <vtkAnimationCue.h>
 #include <vtkRenderWindow.h>
+#include <functional>
 
 class DongfengAnimationCue: public vtkAnimationCue
 {

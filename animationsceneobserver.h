@@ -4,6 +4,7 @@
 #include <vtkAnimationScene.h>
 #include <vtkCommand.h>
 #include <vtkRenderWindow.h>
+#include <functional>
 
 class AnimationSceneObserver : public vtkCommand
 {

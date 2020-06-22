@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(QtObjLoader)
 
-set(VTK_DIR "/Volumes/Data/Software/vtk")
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_CXX_STANDARD 11)
 
 # List source files & resources
 file (GLOB_RECURSE Sources
