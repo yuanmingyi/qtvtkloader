@@ -1,9 +1,11 @@
 #include "scenewidget.h"
 #include "timerutil.h"
+#include "util.h"
 #include "vtk_obj_reader.h"
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
 #include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkDepthSortPolyData.h>
 #include <QCoreApplication>
 #include <QDebug>
 
@@ -56,6 +58,18 @@ SceneWidget::SceneWidget(QWidget *parent)
     });
     _dongfeng->SetColor(_modelColor[0], _modelColor[1], _modelColor[2]);
 
+    _forceDepthSort = false;
+    _withoutAnyDepthThings = true;
+    _maxPeels = 1;
+    _occulusionRatio = 0.1;
+    _useDepthPeeling = util::IsDepthPeelingSupported(GetRenderWindow(), _renderer, true);
+    if (_useDepthPeeling && !_forceDepthSort && !_withoutAnyDepthThings) {
+        // GPU
+        std::cout << "*** DEPTH PEELING ***" << std::endl;
+        // Setup GPU depth peeling with configured parameters
+        util::SetupEnvironmentForDepthPeeling(GetRenderWindow(), _renderer, _maxPeels, _occulusionRatio);
+    }
+
     resize(800, 600);
 }
 
@@ -68,6 +82,9 @@ void SceneWidget::ImportObj(const QString& filename, bool loadTexture)
 {
     StartTimer();
     _dongfeng->ImportObj(filename.toStdString(), _renderer, loadTexture);
+    if (_forceDepthSort || !(_useDepthPeeling || _withoutAnyDepthThings)) {
+        _dongfeng->EnableDepthSort(_renderer);
+    }
     EndTimer("Impoort time:");
     _renderer->ResetCamera();
     GetInteractor()->Render();

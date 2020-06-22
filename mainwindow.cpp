@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
     AddActorComboBox();
     AddLightIntensityControl();
     AddOpacityControl();
-    AddShowAxesCheckBox();
+    //AddShowAxesCheckBox();
     AddAnimateHighlightCheckBox();
     AddLoadTextureCheckBox();
     AddPushButtons();
@@ -54,7 +54,7 @@ MainWindow::~MainWindow()
     delete opacitySlider;
     delete opacityEdit;
     delete statusLabel;
-    delete showAxesCheckBox;
+    //delete showAxesCheckBox;
     delete animateHighlightCheckBox;
     delete loadTextureCheckBox;
     delete animateDaofuButton;

@@ -101,6 +101,8 @@ public:
     void SetOpacity(double opacity);
     void SetColor(double r, double g, double b);
 
+    void EnableDepthSort(vtkRenderer* renderer);
+
 private:
     ObjImporter *_objImporter;
     std::map<vtkActor*, vtkSmartPointer<vtkProperty>> _properties;

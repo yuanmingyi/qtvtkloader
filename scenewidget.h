@@ -55,6 +55,7 @@ signals:
 private:
     void StartTimer();
     void EndTimer(const QString& context = "time: ");
+    void UpdateDepthRendering();
 
     DongfengVis* _dongfeng;
     vtkNew<vtkRenderer> _renderer;
@@ -66,6 +67,11 @@ private:
     double _highlightColor[3];
     double _modelColor[3];
     double _backgroundColor[3];
+    bool _useDepthPeeling;
+    bool _withoutAnyDepthThings;
+    bool _forceDepthSort;
+    int _maxPeels;
+    double _occulusionRatio;
 };
 
 #endif // SCENEWIDGET_H

@@ -1,9 +1,11 @@
 #include <vtkMath.h>
 #include <vtkTransform.h>
 #include <vtkProp3DCollection.h>
+#include <vtkMapper.h>
 #include <vtkActor.h>
 #include <vtkTexture.h>
 #include <vtkAnimationScene.h>
+#include <vtkDepthSortPolyData.h>
 #include <vtksys/SystemTools.hxx>
 #include "dongfenganimation.h"
 #include "dongfengvis.h"
@@ -422,6 +424,24 @@ void DongfengVis::SaveActorProperties()
     for (auto it = modules.begin(); it != modules.end(); it++) {
         _moduleNames.push_back(it->first);
         _highlightFlags[it->first] = false;
+    }
+}
+
+void DongfengVis::EnableDepthSort(vtkRenderer* renderer)
+{
+    auto actors = _objImporter->GetActors();
+    for (auto it = actors.begin(); it != actors.end(); it++) {
+        auto mapper = (*it)->GetMapper();
+        vtkNew<vtkDepthSortPolyData> depthSort;
+        vtkPolyData* pd = dynamic_cast<vtkPolyData*>(mapper->GetInput());
+        depthSort->SetInputData(pd);
+        depthSort->SetDirectionToBackToFront();
+        depthSort->SetVector(1, 1, 1);
+        depthSort->SetCamera(renderer->GetActiveCamera());
+        depthSort->SortScalarsOff(); // do not really need this here
+        // Bring it to the mapper's input
+        mapper->SetInputConnection(depthSort->GetOutputPort());
+        depthSort->Update();
     }
 }
 

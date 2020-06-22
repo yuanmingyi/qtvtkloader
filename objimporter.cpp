@@ -9,6 +9,7 @@
 #include <vtkAssembly.h>
 #include <vtkTexture.h>
 #include <vtkRenderWindow.h>
+#include <vtkDepthSortPolyData.h>
 #include <vtksys/SystemTools.hxx>
 #include <set>
 #include "stringutil.h"
