@@ -49,7 +49,7 @@ public:
     ~DongfengVis();
 
     // load obj data from file
-    void ImportObj(const std::string& fileName, vtkRenderer* renderer, bool loadTexture = true);
+    void ImportObj(const std::string& fileName, vtkRenderer* renderer, bool loadTexture = true, bool enableDepthSort = false);
 
     // predefine animations
     void AnimateDaofu(double start = 0, double end = 1);

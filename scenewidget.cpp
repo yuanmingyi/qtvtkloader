@@ -58,12 +58,10 @@ SceneWidget::SceneWidget(QWidget *parent)
     });
     _dongfeng->SetColor(_modelColor[0], _modelColor[1], _modelColor[2]);
 
-    _forceDepthSort = false;
-    _withoutAnyDepthThings = true;
-    _maxPeels = 1;
+    _maxPeels = 10;
     _occulusionRatio = 0.1;
     _useDepthPeeling = util::IsDepthPeelingSupported(GetRenderWindow(), _renderer, true);
-    if (_useDepthPeeling && !_forceDepthSort && !_withoutAnyDepthThings) {
+    if (_useDepthPeeling) {
         // GPU
         std::cout << "*** DEPTH PEELING ***" << std::endl;
         // Setup GPU depth peeling with configured parameters
@@ -78,13 +76,10 @@ SceneWidget::~SceneWidget()
     delete _dongfeng;
 }
 
-void SceneWidget::ImportObj(const QString& filename, bool loadTexture)
+void SceneWidget::ImportObj(const QString& filename, bool loadTexture, bool isEnableDepthSorting)
 {
     StartTimer();
-    _dongfeng->ImportObj(filename.toStdString(), _renderer, loadTexture);
-    if (_forceDepthSort || !(_useDepthPeeling || _withoutAnyDepthThings)) {
-        _dongfeng->EnableDepthSort(_renderer);
-    }
+    _dongfeng->ImportObj(filename.toStdString(), _renderer, loadTexture, !_useDepthPeeling && isEnableDepthSorting);
     EndTimer("Impoort time:");
     _renderer->ResetCamera();
     GetInteractor()->Render();

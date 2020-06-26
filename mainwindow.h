@@ -35,9 +35,10 @@ public slots:
     void opacitySliderValueChanged(int);
     void opacityEditTextChanged(QString);
 
-    void showAxesChanged(int);
-    void animateHighlightChanged(int);
-    void loadTextureChanged(int);
+    void showAxesChanged();
+    void animateHighlightChanged();
+    void loadTextureChanged();
+    void depthSortingChanged();
 
     void animateDaofu();
     void animateBiantianxian();
@@ -66,9 +67,7 @@ private:
     QSlider* opacitySlider;
     QLineEdit* opacityEdit;
     QLabel* statusLabel;
-    QCheckBox* showAxesCheckBox;
-    QCheckBox* animateHighlightCheckBox;
-    QCheckBox* loadTextureCheckBox;
+
     QPushButton* setModelColorButton;
     QPushButton* setHighlightColorButton;
     QPushButton* setBackgroundColorButton;
@@ -88,14 +87,12 @@ private:
     bool isYoubanHorizontalOpen;
     bool isAnimatePick;
     bool loadTexture;
+    bool isEnableDepthSorting;
 
     void AddActorComboBox();
     void AddLightIntensityControl();
     void AddOpacityControl();
     void AddStatusbarLabel();
-    void AddShowAxesCheckBox();
-    void AddAnimateHighlightCheckBox();
-    void AddLoadTextureCheckBox();
     void AddPushButtons();
 };
 

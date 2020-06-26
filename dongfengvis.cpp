@@ -2,13 +2,16 @@
 #include <vtkTransform.h>
 #include <vtkProp3DCollection.h>
 #include <vtkMapper.h>
+#include <vtkPolyDataMapper.h>
 #include <vtkActor.h>
 #include <vtkTexture.h>
+#include <vtkAppendPolyData.h>
 #include <vtkAnimationScene.h>
 #include <vtkDepthSortPolyData.h>
 #include <vtksys/SystemTools.hxx>
 #include "dongfenganimation.h"
 #include "dongfengvis.h"
+#include "util.h"
 
 const std::string DongfengVis::None = "none";
 const std::string DongfengVis::All = "all";
@@ -81,7 +84,7 @@ void DongfengVis::SetColor(double r, double g, double b)
     }
 }
 
-void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, bool loadTexture)
+void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, bool loadTexture, bool enableDepthSort)
 {
     // remmove old actors
     auto configFile = vtksys::SystemTools::GetFilenamePath(filename) + "/" + vtksys::SystemTools::GetFilenameWithoutLastExtension(filename) + ".txt";
@@ -92,6 +95,9 @@ void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, 
     }
     _objImporter->Import(filename.data(), configFile.data(), loadTexture);
     SaveActorProperties();
+    if (enableDepthSort && renderer) {
+        EnableDepthSort(renderer);
+    }
     root = _objImporter->GetRootObject();
     if (root && renderer) {
         renderer->AddViewProp(root);
@@ -429,12 +435,17 @@ void DongfengVis::SaveActorProperties()
 
 void DongfengVis::EnableDepthSort(vtkRenderer* renderer)
 {
+    vtkNew<vtkActor> rootActor;
+    vtkNew<vtkPolyDataMapper> rootMapper;
+    std::cout << "enable depth sort for actors" << std::endl;
     auto actors = _objImporter->GetActors();
     for (auto it = actors.begin(); it != actors.end(); it++) {
-        auto mapper = (*it)->GetMapper();
+        vtkNew<vtkAppendPolyData> data;
         vtkNew<vtkDepthSortPolyData> depthSort;
+        auto mapper = (*it)->GetMapper();
         vtkPolyData* pd = dynamic_cast<vtkPolyData*>(mapper->GetInput());
-        depthSort->SetInputData(pd);
+        data->AddInputData(pd);
+        depthSort->SetInputConnection(data->GetOutputPort());
         depthSort->SetDirectionToBackToFront();
         depthSort->SetVector(1, 1, 1);
         depthSort->SetCamera(renderer->GetActiveCamera());
@@ -442,6 +453,7 @@ void DongfengVis::EnableDepthSort(vtkRenderer* renderer)
         // Bring it to the mapper's input
         mapper->SetInputConnection(depthSort->GetOutputPort());
         depthSort->Update();
+        (*it)->SetMapper(mapper);
     }
 }
 

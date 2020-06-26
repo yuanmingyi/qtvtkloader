@@ -36,13 +36,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    QObject::connect(ui->actionShow_Axes, SIGNAL(triggered()), this, SLOT(showAxesChanged()));
+    QObject::connect(ui->actionLoad_Texture, SIGNAL(triggered()), this, SLOT(loadTextureChanged()));
+    QObject::connect(ui->actionDepth_Sorting, SIGNAL(triggered()), this, SLOT(depthSortingChanged()));
+    QObject::connect(ui->actionPick_with_Animation, SIGNAL(triggered()), this, SLOT(animateHighlightChanged()));
     AddStatusbarLabel();
     AddActorComboBox();
     AddLightIntensityControl();
     AddOpacityControl();
-    //AddShowAxesCheckBox();
-    AddAnimateHighlightCheckBox();
-    AddLoadTextureCheckBox();
     AddPushButtons();
 }
 
@@ -54,9 +55,6 @@ MainWindow::~MainWindow()
     delete opacitySlider;
     delete opacityEdit;
     delete statusLabel;
-    //delete showAxesCheckBox;
-    delete animateHighlightCheckBox;
-    delete loadTextureCheckBox;
     delete animateDaofuButton;
     delete animateBiantianxianButton;
     delete animateShengjiangganButton;
@@ -75,38 +73,6 @@ void MainWindow::AddStatusbarLabel()
     statusLabel = new QLabel;
     statusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     ui->statusbar->addWidget(statusLabel);
-}
-
-void MainWindow::AddShowAxesCheckBox()
-{
-    showAxesCheckBox = new QCheckBox;
-    showAxesCheckBox->setFixedWidth(60);
-    showAxesCheckBox->setText(tr("Axes"));
-    ui->toolBar->addWidget(showAxesCheckBox);
-
-    QObject::connect(showAxesCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showAxesChanged(int)));
-}
-
-void MainWindow::AddAnimateHighlightCheckBox()
-{
-    isAnimatePick = false;
-    animateHighlightCheckBox = new QCheckBox;
-    animateHighlightCheckBox->setFixedWidth(80);
-    animateHighlightCheckBox->setText(tr("Animate"));
-    ui->toolBar->addWidget(animateHighlightCheckBox);
-
-    QObject::connect(animateHighlightCheckBox, SIGNAL(stateChanged(int)), this, SLOT(animateHighlightChanged(int)));
-}
-
-void MainWindow::AddLoadTextureCheckBox()
-{
-    loadTexture = false;
-    loadTextureCheckBox = new QCheckBox;
-    loadTextureCheckBox->setFixedWidth(80);
-    loadTextureCheckBox->setText(tr("load Tex"));
-    ui->toolBar->addWidget(loadTextureCheckBox);
-
-    QObject::connect(loadTextureCheckBox, SIGNAL(stateChanged(int)), this, SLOT(loadTextureChanged(int)));
 }
 
 void MainWindow::AddActorComboBox()
@@ -239,19 +205,24 @@ void MainWindow::showOpenFileDialog()
     }
 }
 
-void MainWindow::showAxesChanged(int state)
+void MainWindow::showAxesChanged()
 {
-    ui->sceneWidget->ShowAxes(state == Qt::Checked);
+    ui->sceneWidget->ShowAxes(ui->actionShow_Axes->isChecked());
 }
 
-void MainWindow::animateHighlightChanged(int state)
+void MainWindow::animateHighlightChanged()
 {
-    isAnimatePick = state == Qt::Checked;
+    isAnimatePick = ui->actionPick_with_Animation->isChecked();
 }
 
-void MainWindow::loadTextureChanged(int state)
+void MainWindow::loadTextureChanged()
 {
-    loadTexture = state == Qt::Checked;
+    loadTexture = ui->actionLoad_Texture->isChecked();
+}
+
+void MainWindow::depthSortingChanged()
+{
+    isEnableDepthSorting = ui->actionDepth_Sorting->isChecked();
 }
 
 void MainWindow::currentModuleChanged(QString moduleName)
@@ -374,7 +345,7 @@ void MainWindow::setBackgroundColor()
 
 void MainWindow::openFile(const QString &fileName)
 {
-    ui->sceneWidget->ImportObj(fileName, loadTexture);
+    ui->sceneWidget->ImportObj(fileName, loadTexture, isEnableDepthSorting);
     actorsComboBox->clear();
     const std::vector<std::string>& items = ui->sceneWidget->GetPickableItems();
     for (size_t i = 0; i < items.size(); i++) {

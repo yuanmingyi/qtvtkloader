@@ -16,7 +16,7 @@ public:
     explicit SceneWidget(QWidget *parent = nullptr);
     ~SceneWidget();
 
-    void ImportObj(const QString& fileName, bool loadTexture = false);
+    void ImportObj(const QString& fileName, bool loadTexture = false, bool enableDepthSorting = true);
     const std::vector<std::string>& GetPickableItems() const{ return _dongfeng->GetModuleNames(); }
 
     bool IsImported() const { return _isFullImported; }
@@ -68,8 +68,6 @@ private:
     double _modelColor[3];
     double _backgroundColor[3];
     bool _useDepthPeeling;
-    bool _withoutAnyDepthThings;
-    bool _forceDepthSort;
     int _maxPeels;
     double _occulusionRatio;
 };
