@@ -4,6 +4,7 @@
 #include <vtkPolyData.h>
 #include <vtkOBJImporter.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkAppendPolyData.h>
 #include <vtkProperty.h>
 #include <vtkActor.h>
 #include <vtkAssembly.h>
@@ -74,12 +75,28 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     // config root object
     _objRoot = vtkSmartPointer<vtkAssembly>::New();
     // update root object
+    vtkNew<vtkAppendPolyData> appendData;
+    bool hasOtherActors = false;
     for (auto it = _actors.begin(); it != _actors.end(); it++) {
         if (children.find(*it) == children.end()) {
             // the actor is not a child
-            _objRoot->AddPart(*it);
+            auto mapper = (*it)->GetMapper();
+            vtkPolyData* pd = dynamic_cast<vtkPolyData*>(mapper->GetInput());
+            appendData->AddInputData(pd);
+            hasOtherActors = true;
+            //_objRoot->AddPart(*it);
         }
     }
+    if (hasOtherActors) {
+        vtkNew<vtkActor> otherActor;
+        vtkNew<vtkPolyDataMapper> otherMapper;
+        otherMapper->SetInputConnection(appendData->GetOutputPort());
+        otherActor->SetMapper(otherMapper);
+        otherActor->GetProperty()->SetOpacity(0.995);
+        _objRoot->AddPart(otherActor);
+        _combinedActors.push_back(otherActor);
+    }
+
     for (auto it = _assemblyMap.begin(); it != _assemblyMap.end(); it++) {
         if (children.find(it->second) == children.end()) {
             // the assembly is not a child
@@ -122,12 +139,17 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
             std::cout << "Define assembly: " << assemblyName << " with origin: (" << originX << "," << originY << "," << originZ << ")" << std::endl;
         } else {
             // tokens are child actors/assemblies
+            vtkNew<vtkAppendPolyData> appendData;
+            bool hasActorChildren = false;
             for (auto it = tokens.begin(); it != tokens.end(); it++) {
                 // check actor
                 if (vtksys::SystemTools::StringStartsWith(*it, "actor")) {
                     size_t index = static_cast<size_t>(std::stoi(it->substr(5)));
-                    assembly->AddPart(_actors[index]);
-                    children.insert(_actors[index]);
+                    auto actor = _actors[index];
+                    vtkPolyData* pd = dynamic_cast<vtkPolyData*>(actor->GetMapper()->GetInput());
+                    appendData->AddInputData(pd);
+                    children.insert(actor);
+                    hasActorChildren = true;
                     std::cout << "\tadd actor " << index << std::endl;
                 } else {
                     auto childAssembly = _assemblyMap.find(*it);
@@ -145,6 +167,15 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
                     }
                 }
             }
+            if (hasActorChildren) {
+                vtkNew<vtkActor> actor;
+                vtkNew<vtkPolyDataMapper> mapper;
+                mapper->SetInputConnection(appendData->GetOutputPort());
+                actor->SetMapper(mapper);
+                actor->GetProperty()->SetOpacity(0.995);
+                assembly->AddPart(actor);
+                _combinedActors.push_back(actor);
+            }
         }
     }
 
@@ -157,4 +188,5 @@ void ObjImporter::ClearActors()
         (*it)->UnRegister(nullptr);
     }
     _actors.clear();
+    _combinedActors.clear();
 }

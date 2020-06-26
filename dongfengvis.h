@@ -41,7 +41,7 @@ public:
         double specular;
         double specularPower;
 
-        HighlightArguments(const double* color, double opacity = 1.0, double ambient = 0.5, double diffuse = 0.5, double specular = 0.5, double specularPower = 1);
+        HighlightArguments(const double* color, double opacity = 0.995, double ambient = 0.5, double diffuse = 0.5, double specular = 0.5, double specularPower = 1);
     };
 
 public:

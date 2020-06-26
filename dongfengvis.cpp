@@ -186,11 +186,19 @@ void DongfengVis::AnimateHighlight(const std::string &moduleName, const Highligh
         return;
     }
     animation->SetRenderMethod(_renderMethod);
+//    animation->Add([this, moduleName, args](double value) {
+//        auto p = 5 * (value < 0.2 ? value : (value < 0.4 ? (0.4 - value) : (value < 0.6 ? (value - 0.4) : (value < 0.8 ? (0.8 - value) : (value - 0.8)))));
+//        HighlightArguments intArgs(args.color, args.opacity * p, args.ambient, args.diffuse, args.specular, args.specularPower);
+//        this->HighlightOn(moduleName, intArgs);
+//    }, 0, 1);
     animation->Add([this, moduleName, args](double value) {
-        auto p = 5 * (value < 0.2 ? value : (value < 0.4 ? (0.4 - value) : (value < 0.6 ? (value - 0.4) : (value < 0.8 ? (0.8 - value) : (value - 0.8)))));
-        HighlightArguments intArgs(args.color, args.opacity * p, args.ambient, args.diffuse, args.specular, args.specularPower);
-        this->HighlightOn(moduleName, intArgs);
-    }, 0, 1);
+        bool isShown = value < 0.2 || (value >= 0.4 && value < 0.6) || (value >= 0.8 && value < 1.0);
+        if (isShown && !this->IsModuleHighlightOn(moduleName)) {
+            this->HighlightOn(moduleName, args);
+        } else if (!isShown && this->IsModuleHighlightOn(moduleName)) {
+            this->HighlightOff(moduleName);
+        }
+    }, 0, 0.995);
     animation->Play();
     animation->Stop();
 }
@@ -406,6 +414,8 @@ void DongfengVis::LiftShengjianggan4(double rate)
 
 void DongfengVis::SaveActorProperties()
 {
+    std::cout << "set color: (" << _color[0] << ", " << _color[1] << "," << _color[2] << ")" << std::endl;
+    std::cout << "set opacity: " << _opacity << std::endl;
     _properties.clear();
     ClearTextures();
     _moduleNames.clear();
@@ -435,17 +445,13 @@ void DongfengVis::SaveActorProperties()
 
 void DongfengVis::EnableDepthSort(vtkRenderer* renderer)
 {
-    vtkNew<vtkActor> rootActor;
-    vtkNew<vtkPolyDataMapper> rootMapper;
     std::cout << "enable depth sort for actors" << std::endl;
     auto actors = _objImporter->GetActors();
     for (auto it = actors.begin(); it != actors.end(); it++) {
-        vtkNew<vtkAppendPolyData> data;
         vtkNew<vtkDepthSortPolyData> depthSort;
         auto mapper = (*it)->GetMapper();
-        vtkPolyData* pd = dynamic_cast<vtkPolyData*>(mapper->GetInput());
-        data->AddInputData(pd);
-        depthSort->SetInputConnection(data->GetOutputPort());
+        auto pd = dynamic_cast<vtkAppendPolyData*>(mapper->GetInput());
+        depthSort->SetInputConnection(pd->GetOutputPort());
         depthSort->SetDirectionToBackToFront();
         depthSort->SetVector(1, 1, 1);
         depthSort->SetCamera(renderer->GetActiveCamera());

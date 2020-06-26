@@ -121,7 +121,7 @@ void MainWindow::AddLightIntensityControl()
 void MainWindow::AddOpacityControl()
 {
     auto validator = new QDoubleValidator;
-    validator->setRange(0, 1);
+    validator->setRange(0, 0.995);
 
     auto label = new QLabel;
     label->setText(tr("opacity:"));
@@ -130,16 +130,18 @@ void MainWindow::AddOpacityControl()
 
     opacitySlider = new QSlider(Qt::Horizontal);
     opacitySlider->setFixedWidth(50);
-    opacitySlider->setMaximum(100);
+    opacitySlider->setMaximum(995);
     opacitySlider->setMinimum(0);
-    opacitySlider->setValue(100);
+    opacitySlider->setValue(995);
     ui->toolBar->addWidget(opacitySlider);
 
+    auto value = sliderValueToIntensity(opacitySlider->value(), 1000.0);
     opacityEdit = new QLineEdit();
     opacityEdit->setFixedWidth(50);
     opacityEdit->setValidator(validator);
-    opacityEdit->setText(QString::number(sliderValueToIntensity(opacitySlider->value(), 100.0)));
+    opacityEdit->setText(QString::number(value));
     ui->toolBar->addWidget(opacityEdit);
+    ui->sceneWidget->SetOpacity(value);
 
     QObject::connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(opacitySliderValueChanged(int)));
     QObject::connect(opacityEdit, SIGNAL(textChanged(QString)), this, SLOT(opacityEditTextChanged(QString)));
@@ -260,7 +262,7 @@ void MainWindow::lightIntensityChanged(QString text)
 void MainWindow::opacitySliderValueChanged(int value)
 {
     qDebug() << "opacitySliderValueChanged()" << endl;
-    double opacity = sliderValueToIntensity(value, 100.0);
+    double opacity = sliderValueToIntensity(value, 1000.0);
     auto text = QString::number(opacity);
     opacityEdit->setText(text);
     ui->sceneWidget->SetOpacity(opacity);
@@ -269,7 +271,7 @@ void MainWindow::opacitySliderValueChanged(int value)
 void MainWindow::opacityEditTextChanged(QString text)
 {
     qDebug() << "opacityEditTextChanged()" << endl;
-    int value = intensityToSliderValue(text.toDouble(), 100.0);
+    int value = intensityToSliderValue(text.toDouble(), 1000.0);
     opacitySlider->setValue(value);
 }
 
