@@ -18,6 +18,7 @@
 ObjImporter::ObjImporter()
 {
     this->_objRoot = nullptr;
+    this->_staticActor = nullptr;
 }
 
 void ObjImporter::Import(const char* objfile, const char* configfile, bool loadTexture, const char* mtlfile, const char* texturedir)
@@ -65,11 +66,11 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
         mapper->SetInputData(pd);
     }
 
-    std::set<vtkProp3D*> children;
+    std::set<vtkProp3D*> children, excluded;
     // load config
     if (configfile != nullptr)
     {
-        LoadConfig(children, configfile);
+        LoadConfig(children, excluded, configfile);
     }
 
     // config root object
@@ -78,13 +79,12 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     vtkNew<vtkAppendPolyData> appendData;
     bool hasOtherActors = false;
     for (auto it = _actors.begin(); it != _actors.end(); it++) {
-        if (children.find(*it) == children.end()) {
-            // the actor is not a child
+        if (excluded.find(*it) == excluded.end() && children.find(*it) == children.end()) {
+            // the actor is neither excluded nor a child
             auto mapper = (*it)->GetMapper();
             vtkPolyData* pd = dynamic_cast<vtkPolyData*>(mapper->GetInput());
             appendData->AddInputData(pd);
             hasOtherActors = true;
-            //_objRoot->AddPart(*it);
         }
     }
     if (hasOtherActors) {
@@ -106,7 +106,18 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     _assemblyMap["all"] = _objRoot;
 }
 
-bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configfile)
+vtkActor* ObjImporter::GetActor(const std::string& actorName)
+{
+    if (vtksys::SystemTools::StringStartsWith(actorName, "actor")) {
+        size_t index = static_cast<size_t>(std::stoi(actorName.substr(5)));
+        if (index < _actors.size()) {
+            return _actors[index];
+        }
+    }
+    return nullptr;
+}
+
+bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, std::set<vtkProp3D*>& excluded, const char* configfile)
 {
     std::ifstream ifs(configfile);
     std::string line;
@@ -126,7 +137,17 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
         std::cout << "read line: " << line << std::endl;
         std::vector<std::string> tokens;
         vtksys::SystemTools::Split(line, tokens, ' ');
-        if (assembly == nullptr) {
+        if (tokens[0] == "exclude:") {
+            for (size_t i = 1; i < tokens.size(); i++) {
+                auto actor = GetActor(tokens[i]);
+                if (actor) {
+                    std::cout << "exclude " << tokens[i] << std::endl;
+                    excluded.insert(actor);
+                } else {
+                    std::cerr << "actor not found: " << tokens[i] << std::endl;
+                }
+            }
+        } else if (assembly == nullptr) {
             assembly = vtkSmartPointer<vtkAssembly>::New();
             assemblyName = tokens[0];
             _assemblyMap[assemblyName] = assembly;
@@ -143,14 +164,13 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
             bool hasActorChildren = false;
             for (auto it = tokens.begin(); it != tokens.end(); it++) {
                 // check actor
-                if (vtksys::SystemTools::StringStartsWith(*it, "actor")) {
-                    size_t index = static_cast<size_t>(std::stoi(it->substr(5)));
-                    auto actor = _actors[index];
+                auto actor = GetActor(*it);
+                if (actor) {
                     vtkPolyData* pd = dynamic_cast<vtkPolyData*>(actor->GetMapper()->GetInput());
                     appendData->AddInputData(pd);
                     children.insert(actor);
                     hasActorChildren = true;
-                    std::cout << "\tadd actor " << index << std::endl;
+                    std::cout << "\tadd " << *it << std::endl;
                 } else {
                     auto childAssembly = _assemblyMap.find(*it);
                     if (childAssembly == _assemblyMap.end()) {

@@ -23,7 +23,7 @@ public:
     ObjImporter();
 
 protected:
-    const std::vector<vtkActor*> GetImportedActors() const { return _actors; }
+    vtkActor* GetActor(const std::string& actorName);
 
 private:
     vtkSmartPointer<vtkAssembly> _objRoot;
@@ -32,7 +32,7 @@ private:
     std::vector<vtkActor*> _combinedActors;
     vtkSmartPointer<vtkActor> _staticActor;
 
-    bool LoadConfig(std::set<vtkProp3D*>& children, const char* configfile);
+    bool LoadConfig(std::set<vtkProp3D*>& children, std::set<vtkProp3D*>& excluded, const char* configfile);
     void ClearActors();
 };
 

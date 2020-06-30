@@ -182,19 +182,19 @@ void DongfengVis::AnimateHighlight(const std::string &moduleName, const Highligh
         return;
     }
     animation->SetRenderMethod(_renderMethod);
-//    animation->Add([this, moduleName, args](double value) {
-//        auto p = 5 * (value < 0.2 ? value : (value < 0.4 ? (0.4 - value) : (value < 0.6 ? (value - 0.4) : (value < 0.8 ? (0.8 - value) : (value - 0.8)))));
-//        HighlightArguments intArgs(args.color, args.opacity * p, args.ambient, args.diffuse, args.specular, args.specularPower);
-//        this->HighlightOn(moduleName, intArgs);
-//    }, 0, 1);
     animation->Add([this, moduleName, args](double value) {
-        bool isShown = value < 0.2 || (value >= 0.4 && value < 0.6) || (value >= 0.8 && value < 1.0);
-        if (isShown && !this->IsModuleHighlightOn(moduleName)) {
-            this->HighlightOn(moduleName, args);
-        } else if (!isShown && this->IsModuleHighlightOn(moduleName)) {
-            this->HighlightOff(moduleName);
-        }
+        auto opacity = args.opacity * 5 * (value < 0.2 ? value : (value < 0.4 ? (0.4 - value) : (value < 0.6 ? (value - 0.4) : (value < 0.8 ? (0.8 - value) : (value - 0.8)))));
+        HighlightArguments intArgs(args.color, opacity, args.ambient, args.diffuse, args.specular, args.specularPower);
+        this->HighlightOn(moduleName, intArgs);
     }, 0, 1);
+//    animation->Add([this, moduleName, args](double value) {
+//        bool isShown = value < 0.2 || (value >= 0.4 && value < 0.6) || (value >= 0.8 && value <= 1.0);
+//        if (isShown && !this->IsModuleHighlightOn(moduleName)) {
+//            this->HighlightOn(moduleName, args);
+//        } else if (!isShown && this->IsModuleHighlightOn(moduleName)) {
+//            this->HighlightOff(moduleName);
+//        }
+//    }, 0, 1);
     animation->Play();
     animation->Stop();
 }
