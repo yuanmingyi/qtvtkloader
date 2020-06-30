@@ -60,13 +60,9 @@ DongfengVis::~DongfengVis()
 void DongfengVis::SetOpacity(double opacity)
 {
     _opacity = opacity;
-    auto actors = _objImporter->GetActors();
-    for (auto it = actors.begin(); it != actors.end(); it++) {
-        auto highlightMark = _highlightActorMap.find(*it);
-        if (highlightMark != _highlightActorMap.end() && !highlightMark->second) {
-            // actor is not highlight
-            (*it)->GetProperty()->SetOpacity(_opacity);
-        }
+    auto staticActor = _objImporter->GetStaticActor();
+    if (staticActor) {
+        staticActor->GetProperty()->SetOpacity(_opacity);
     }
 }
 
@@ -198,7 +194,7 @@ void DongfengVis::AnimateHighlight(const std::string &moduleName, const Highligh
         } else if (!isShown && this->IsModuleHighlightOn(moduleName)) {
             this->HighlightOff(moduleName);
         }
-    }, 0, 0.995);
+    }, 0, 1);
     animation->Play();
     animation->Stop();
 }
@@ -242,6 +238,7 @@ void DongfengVis::HighlightOn(const std::string& moduleName, const HighlightArgu
 void DongfengVis::HighlightOff(const std::string &moduleName)
 {
     auto module = _objImporter->GetAssemblyMap().at(moduleName);
+    auto staticActor = _objImporter->GetStaticActor();
     vtkNew<vtkPropCollection> collection;
     module->GetActors(collection);
     collection->InitTraversal();
@@ -250,7 +247,11 @@ void DongfengVis::HighlightOff(const std::string &moduleName)
         auto property = _properties.at(actor);
         auto texture = _textures.at(actor);
         actor->GetProperty()->DeepCopy(property);
-        actor->GetProperty()->SetOpacity(_opacity);
+        if (actor == staticActor) {
+            actor->GetProperty()->SetOpacity(_opacity);
+        } else {
+            actor->GetProperty()->SetOpacity(1.0);
+        }
         actor->GetProperty()->SetColor(_color);
         actor->SetTexture(texture);
         _highlightActorMap[actor] = false;
@@ -433,8 +434,12 @@ void DongfengVis::SaveActorProperties()
         }
         _textures[*it] = texture;
         _highlightActorMap[*it] = false;
-        (*it)->GetProperty()->SetOpacity(_opacity);
+        // (*it)->GetProperty()->SetOpacity(_opacity);
         (*it)->GetProperty()->SetColor(_color);
+    }
+    auto staticActor = _objImporter->GetStaticActor();
+    if (staticActor) {
+        staticActor->GetProperty()->SetOpacity(_opacity);
     }
     auto modules = _objImporter->GetAssemblyMap();
     for (auto it = modules.begin(); it != modules.end(); it++) {

@@ -88,13 +88,13 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
         }
     }
     if (hasOtherActors) {
-        vtkNew<vtkActor> otherActor;
+        _staticActor = vtkSmartPointer<vtkActor>::New();
         vtkNew<vtkPolyDataMapper> otherMapper;
         otherMapper->SetInputConnection(appendData->GetOutputPort());
-        otherActor->SetMapper(otherMapper);
-        otherActor->GetProperty()->SetOpacity(0.995);
-        _objRoot->AddPart(otherActor);
-        _combinedActors.push_back(otherActor);
+        otherMapper->ScalarVisibilityOff();
+        _staticActor->SetMapper(otherMapper);
+        _objRoot->AddPart(_staticActor);
+        _combinedActors.push_back(_staticActor);
     }
 
     for (auto it = _assemblyMap.begin(); it != _assemblyMap.end(); it++) {
@@ -171,8 +171,8 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, const char* configf
                 vtkNew<vtkActor> actor;
                 vtkNew<vtkPolyDataMapper> mapper;
                 mapper->SetInputConnection(appendData->GetOutputPort());
+                mapper->ScalarVisibilityOff();
                 actor->SetMapper(mapper);
-                actor->GetProperty()->SetOpacity(0.995);
                 assembly->AddPart(actor);
                 _combinedActors.push_back(actor);
             }
@@ -189,4 +189,5 @@ void ObjImporter::ClearActors()
     }
     _actors.clear();
     _combinedActors.clear();
+    _staticActor = nullptr;
 }

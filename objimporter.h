@@ -11,7 +11,9 @@
 class ObjImporter
 {
 public:
+    vtkActor* GetStaticActor() const { return _staticActor; }
     const std::vector<vtkActor*> GetActors() const { return _combinedActors; }
+    const std::vector<vtkActor*> GetOriginalActors() const { return _actors; }
     const std::map<std::string, vtkSmartPointer<vtkAssembly>> GetAssemblyMap() const { return _assemblyMap; }
     vtkAssembly* GetRootObject() const { return _objRoot; }
 
@@ -28,6 +30,7 @@ private:
     std::map<std::string, vtkSmartPointer<vtkAssembly>> _assemblyMap;
     std::vector<vtkActor*> _actors;
     std::vector<vtkActor*> _combinedActors;
+    vtkSmartPointer<vtkActor> _staticActor;
 
     bool LoadConfig(std::set<vtkProp3D*>& children, const char* configfile);
     void ClearActors();
