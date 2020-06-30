@@ -76,10 +76,10 @@ SceneWidget::~SceneWidget()
     delete _dongfeng;
 }
 
-void SceneWidget::ImportObj(const QString& filename, bool loadTexture, bool isEnableDepthSorting)
+void SceneWidget::ImportObj(const std::string& filename, bool loadTexture, bool isEnableDepthSorting)
 {
     StartTimer();
-    _dongfeng->ImportObj(filename.toStdString(), _renderer, loadTexture, !_useDepthPeeling && isEnableDepthSorting);
+    _dongfeng->ImportObj(filename, _renderer, loadTexture, !_useDepthPeeling && isEnableDepthSorting);
     EndTimer("Impoort time:");
     _renderer->ResetCamera();
     GetInteractor()->Render();
@@ -99,7 +99,7 @@ void SceneWidget::SetLightIntensity(double intensity)
     GetInteractor()->Render();
 }
 
-void SceneWidget::PickModule(const std::string &moduleName)
+void SceneWidget::PickModule(const std::string& moduleName)
 {
     _dongfeng->Highlight(moduleName, DongfengVis::HighlightArguments(_highlightColor));
     GetInteractor()->Render();
@@ -178,14 +178,14 @@ void SceneWidget::StartTimer()
     }
 }
 
-void SceneWidget::EndTimer(const QString& context)
+void SceneWidget::EndTimer(const std::string& context)
 {
     if (_isTiming) {
         qDebug() << "end timing" << endl;
         _isTiming = false;
         _tm.end();
-        qDebug() << context << _tm.msec() << "ms" << endl;
+        qDebug() << context.data() << _tm.msec() << "ms" << endl;
     } else {
-        qDebug() << context << " end timer failed. Not in timing" << endl;
+        qDebug() << context.data() << " end timer failed. Not in timing" << endl;
     }
 }

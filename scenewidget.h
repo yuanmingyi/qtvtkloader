@@ -16,8 +16,8 @@ public:
     explicit SceneWidget(QWidget *parent = nullptr);
     ~SceneWidget();
 
-    void ImportObj(const QString& fileName, bool loadTexture = false, bool enableDepthSorting = true);
-    const std::vector<std::string>& GetPickableItems() const{ return _dongfeng->GetModuleNames(); }
+    void ImportObj(const std::string& fileName, bool loadTexture = false, bool enableDepthSorting = true);
+    const std::vector<std::string>& GetPickableItems() const { return _dongfeng->GetModuleNames(); }
 
     bool IsImported() const { return _isFullImported; }
 
@@ -45,6 +45,12 @@ public:
     void AnimateYoubanHorizontal(bool open = true) { open ? _dongfeng->AnimateYoubanHorizontal(0, 1) : _dongfeng->AnimateYoubanHorizontal(1, 0); }
     void AnimateYoubanVertical() { _dongfeng->AnimateYoubanVertical(); }
 
+    void SaveCurrentCamera(const std::string& cameraName);
+    void RestoreCamera(const std::string& cameraName);
+    const std::vector<std::string>& GetCameras() const;
+    void LoadCameras(const std::string& filepath);
+    void SaveCameras(const std::string& filepath);
+
 public slots:
     //! Zoom to the extent of the data set in the scene
     void zoomToExtent();
@@ -54,7 +60,7 @@ signals:
 
 private:
     void StartTimer();
-    void EndTimer(const QString& context = "time: ");
+    void EndTimer(const std::string& context = "time: ");
     void UpdateDepthRendering();
 
     DongfengVis* _dongfeng;
