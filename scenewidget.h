@@ -4,7 +4,7 @@
 #include <QObject>
 #include "timerutil.h"
 #include "dongfengvis.h"
-#include "demointeractorstyle.h"
+#include "cameraanimation.h"
 #include <QVTKOpenGLNativeWidget.h>
 
 class SceneWidget : public QVTKOpenGLNativeWidget
@@ -46,8 +46,9 @@ public:
     void AnimateYoubanVertical() { _dongfeng->AnimateYoubanVertical(); }
 
     void SaveCurrentCamera(const std::string& cameraName);
-    void RestoreCamera(const std::string& cameraName);
-    const std::vector<std::string>& GetCameras() const;
+    void RestoreCamera(const std::string& cameraName, bool animate = false);
+    bool HasCamera(const std::string& cameraName) const { return _cameras.find(cameraName) != _cameras.end(); }
+    const std::vector<std::string>& GetCameras() const { return _cameraNames; }
     void LoadCameras(const std::string& filepath);
     void SaveCameras(const std::string& filepath);
 
@@ -63,6 +64,9 @@ private:
     void EndTimer(const std::string& context = "time: ");
     void UpdateDepthRendering();
 
+    CameraInfo GetCameraInfo();
+    void ApplyCamaraInfo(const CameraInfo& cameraInfo);
+
     DongfengVis* _dongfeng;
     vtkNew<vtkRenderer> _renderer;
     vtkNew<vtkLight> _light;
@@ -76,6 +80,8 @@ private:
     bool _useDepthPeeling;
     int _maxPeels;
     double _occulusionRatio;
+    std::vector<std::string> _cameraNames;
+    std::map<std::string, CameraInfo> _cameras;
 };
 
 #endif // SCENEWIDGET_H

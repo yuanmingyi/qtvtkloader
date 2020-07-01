@@ -9,7 +9,6 @@
 #include <vtkProperty.h>
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
-#include "cameraanimationcue.h"
 #include "objimporter.h"
 
 class DongfengVis
@@ -113,8 +112,6 @@ private:
     std::function<void()> _renderMethod;
     double _opacity;
     double _color[3];
-
-    vtkNew<CameraAnimationCue> _cameraCue;
 
     void SaveActorProperties();
     void ClearTextures();
