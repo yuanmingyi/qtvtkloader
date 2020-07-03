@@ -1,8 +1,15 @@
 #include "scenewidget.h"
 #include "timerutil.h"
 #include "util.h"
-#include "vtk_obj_reader.h"
+#include "cameraanimation.h"
 #include <vtkSmartPointer.h>
+#include <vtkCamera.h>
+#include <vtkLight.h>
+#include <vtkTextProperty.h>
+#include <vtkAxesActor.h>
+#include <vtkCaptionActor2D.h>
+#include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkRenderer.h>
 #include <vtkTransform.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkDepthSortPolyData.h>
@@ -76,10 +83,10 @@ SceneWidget::~SceneWidget()
     delete _dongfeng;
 }
 
-void SceneWidget::ImportObj(const QString& filename, bool loadTexture, bool isEnableDepthSorting)
+void SceneWidget::ImportObj(const std::string& filename, bool loadTexture, bool isEnableDepthSorting)
 {
     StartTimer();
-    _dongfeng->ImportObj(filename.toStdString(), _renderer, loadTexture, !_useDepthPeeling && isEnableDepthSorting);
+    _dongfeng->ImportObj(filename, _renderer, loadTexture, !_useDepthPeeling && isEnableDepthSorting);
     EndTimer("Impoort time:");
     _renderer->ResetCamera();
     GetInteractor()->Render();
@@ -99,7 +106,7 @@ void SceneWidget::SetLightIntensity(double intensity)
     GetInteractor()->Render();
 }
 
-void SceneWidget::PickModule(const std::string &moduleName)
+void SceneWidget::PickModule(const std::string& moduleName)
 {
     _dongfeng->Highlight(moduleName, DongfengVis::HighlightArguments(_highlightColor));
     GetInteractor()->Render();
@@ -178,14 +185,90 @@ void SceneWidget::StartTimer()
     }
 }
 
-void SceneWidget::EndTimer(const QString& context)
+void SceneWidget::EndTimer(const std::string& context)
 {
     if (_isTiming) {
         qDebug() << "end timing" << endl;
         _isTiming = false;
         _tm.end();
-        qDebug() << context << _tm.msec() << "ms" << endl;
+        qDebug() << context.data() << _tm.msec() << "ms" << endl;
     } else {
-        qDebug() << context << " end timer failed. Not in timing" << endl;
+        qDebug() << context.data() << " end timer failed. Not in timing" << endl;
     }
+}
+
+void SceneWidget::SaveCurrentCamera(const std::string& cameraName)
+{
+    auto cameraInfo = GetCameraInfo();
+    auto it = _cameras.find(cameraName);
+    if (it != _cameras.end()) {
+        it->second = cameraInfo;
+    } else {
+        _cameras[cameraName] = cameraInfo;
+        _cameraNames.push_back(cameraName);
+    }
+}
+
+void SceneWidget::RestoreCamera(const std::string& cameraName, bool animate)
+{
+    auto it = _cameras.find(cameraName);
+    if (it != _cameras.end()) {
+        if (!animate) {
+            ApplyCamaraInfo(it->second);
+        } else {
+            vtkNew<CameraAnimation> animation;
+            animation->Play([this]() { this->GetInteractor()->Render(); }, _renderer, GetCameraInfo(), it->second, 1);
+        }
+    } else {
+        qDebug() << "camera not found: " << cameraName.data() << endl;
+    }
+}
+
+void SceneWidget::LoadCameras(const std::string& filepath)
+{
+    std::ifstream ifs(filepath);
+    _cameras.clear();
+    _cameraNames.clear();
+    while (ifs.eof()) {
+        std::string moduleName;
+        CameraInfo info;
+        ifs >> moduleName >> info.Roll
+                >> info.Position[0] >> info.Position[1] >> info.Position[2]
+                >> info.FocalPoint[0] >> info.FocalPoint[1] >> info.FocalPoint[2];
+        if (_cameras.find(moduleName) == _cameras.end()) {
+            _cameraNames.push_back(moduleName);
+        }
+        _cameras[moduleName] = info;
+    }
+    ifs.close();
+}
+
+void SceneWidget::SaveCameras(const std::string& filepath)
+{
+    std::ofstream ofs(filepath);
+    for (auto it = _cameras.begin(); it != _cameras.end(); it++) {
+        auto info = it->second;
+        ofs << it->first << " " << info.Roll << std::endl
+            << info.Position[0] << " " << info.Position[1] << info.Position[2] << std::endl
+            << info.FocalPoint[0] << " " << info.FocalPoint[1] << info.FocalPoint[2] << std::endl;
+    }
+    ofs.close();
+}
+
+CameraInfo SceneWidget::GetCameraInfo()
+{
+    CameraInfo info;
+    auto camera = _renderer->GetActiveCamera();
+    info.Roll = camera->GetRoll();
+    camera->GetPosition(info.Position);
+    camera->GetFocalPoint(info.FocalPoint);
+    return info;
+}
+
+void SceneWidget::ApplyCamaraInfo(const CameraInfo& cameraInfo)
+{
+    auto camera = _renderer->GetActiveCamera();
+    camera->SetRoll(cameraInfo.Roll);
+    camera->SetPosition(cameraInfo.Position);
+    camera->SetFocalPoint(cameraInfo.FocalPoint);
 }

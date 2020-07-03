@@ -347,7 +347,7 @@ void MainWindow::setBackgroundColor()
 
 void MainWindow::openFile(const QString &fileName)
 {
-    ui->sceneWidget->ImportObj(fileName, loadTexture, isEnableDepthSorting);
+    ui->sceneWidget->ImportObj(fileName.toStdString(), loadTexture, isEnableDepthSorting);
     actorsComboBox->clear();
     const std::vector<std::string>& items = ui->sceneWidget->GetPickableItems();
     for (size_t i = 0; i < items.size(); i++) {

@@ -199,6 +199,7 @@ bool ObjImporter::LoadConfig(std::set<vtkProp3D*>& children, std::set<vtkProp3D*
         }
     }
 
+    ifs.close();
     return true;
 }
 

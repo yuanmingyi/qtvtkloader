@@ -4,7 +4,7 @@
 #include <QObject>
 #include "timerutil.h"
 #include "dongfengvis.h"
-#include "demointeractorstyle.h"
+#include "cameraanimation.h"
 #include <QVTKOpenGLNativeWidget.h>
 
 class SceneWidget : public QVTKOpenGLNativeWidget
@@ -16,8 +16,8 @@ public:
     explicit SceneWidget(QWidget *parent = nullptr);
     ~SceneWidget();
 
-    void ImportObj(const QString& fileName, bool loadTexture = false, bool enableDepthSorting = true);
-    const std::vector<std::string>& GetPickableItems() const{ return _dongfeng->GetModuleNames(); }
+    void ImportObj(const std::string& fileName, bool loadTexture = false, bool enableDepthSorting = true);
+    const std::vector<std::string>& GetPickableItems() const { return _dongfeng->GetModuleNames(); }
 
     bool IsImported() const { return _isFullImported; }
 
@@ -45,6 +45,13 @@ public:
     void AnimateYoubanHorizontal(bool open = true) { open ? _dongfeng->AnimateYoubanHorizontal(0, 1) : _dongfeng->AnimateYoubanHorizontal(1, 0); }
     void AnimateYoubanVertical() { _dongfeng->AnimateYoubanVertical(); }
 
+    void SaveCurrentCamera(const std::string& cameraName);
+    void RestoreCamera(const std::string& cameraName, bool animate = false);
+    bool HasCamera(const std::string& cameraName) const { return _cameras.find(cameraName) != _cameras.end(); }
+    const std::vector<std::string>& GetCameras() const { return _cameraNames; }
+    void LoadCameras(const std::string& filepath);
+    void SaveCameras(const std::string& filepath);
+
 public slots:
     //! Zoom to the extent of the data set in the scene
     void zoomToExtent();
@@ -54,8 +61,11 @@ signals:
 
 private:
     void StartTimer();
-    void EndTimer(const QString& context = "time: ");
+    void EndTimer(const std::string& context = "time: ");
     void UpdateDepthRendering();
+
+    CameraInfo GetCameraInfo();
+    void ApplyCamaraInfo(const CameraInfo& cameraInfo);
 
     DongfengVis* _dongfeng;
     vtkNew<vtkRenderer> _renderer;
@@ -70,6 +80,8 @@ private:
     bool _useDepthPeeling;
     int _maxPeels;
     double _occulusionRatio;
+    std::vector<std::string> _cameraNames;
+    std::map<std::string, CameraInfo> _cameras;
 };
 
 #endif // SCENEWIDGET_H
