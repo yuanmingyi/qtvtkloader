@@ -89,6 +89,7 @@ private:
     bool loadTexture;
     bool isEnableDepthSorting;
 
+    void InitProperties();
     void AddActorComboBox();
     void AddLightIntensityControl();
     void AddOpacityControl();

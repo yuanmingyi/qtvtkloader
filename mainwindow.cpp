@@ -40,6 +40,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionLoad_Texture, SIGNAL(triggered()), this, SLOT(loadTextureChanged()));
     QObject::connect(ui->actionDepth_Sorting, SIGNAL(triggered()), this, SLOT(depthSortingChanged()));
     QObject::connect(ui->actionPick_with_Animation, SIGNAL(triggered()), this, SLOT(animateHighlightChanged()));
+
+    InitProperties();
     AddStatusbarLabel();
     AddActorComboBox();
     AddLightIntensityControl();
@@ -66,6 +68,13 @@ MainWindow::~MainWindow()
     delete setHighlightColorButton;
     delete setBackgroundColorButton;
     delete ui;
+}
+
+void MainWindow::InitProperties()
+{
+    isEnableDepthSorting = false;
+    loadTexture = false;
+    isAnimatePick = false;
 }
 
 void MainWindow::AddStatusbarLabel()

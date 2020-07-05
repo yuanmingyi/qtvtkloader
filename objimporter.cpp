@@ -13,6 +13,7 @@
 #include <vtkDepthSortPolyData.h>
 #include <vtksys/SystemTools.hxx>
 #include <set>
+#include <string>
 #include "stringutil.h"
 
 ObjImporter::ObjImporter()
@@ -26,13 +27,16 @@ void ObjImporter::Import(const char* objfile, const char* configfile, bool loadT
     auto objdir = vtksys::SystemTools::GetFilenamePath(objfile);
     auto objname = vtksys::SystemTools::GetFilenameWithoutLastExtension(objfile);
 
+    std::cout << "import obj file: " << objfile << std::endl;
     vtkNew<vtkOBJImporter> importer;
     importer->SetFileName(objfile);
 
-    const char *mtlpath = (mtlfile == nullptr) ? (objdir + "/" + objname + ".mtl").data() : mtlfile;
-    importer->SetFileNameMTL(mtlpath);
+    std::string mtlpath = (mtlfile == nullptr) ? (objdir + "/" + objname + ".mtl") : mtlfile;
+    std::cout << "import mtl file: " << mtlpath << std::endl;
+    importer->SetFileNameMTL(mtlpath.data());
     if (loadTexture) {
         const char *textpath = (texturedir == nullptr) ? objdir.data() : texturedir;
+        std::cout << "load texture path: " << textpath << std::endl;
         importer->SetTexturePath(textpath);
     }
 

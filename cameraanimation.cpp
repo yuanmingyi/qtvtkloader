@@ -1,5 +1,6 @@
 #include "cameraanimation.h"
 #include <vtkCamera.h>
+#include <string>
 
 void Print3d(std::string hint, double* value)
 {
