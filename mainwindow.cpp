@@ -92,8 +92,7 @@ void MainWindow::AddActorComboBox()
     ui->toolBar->addWidget(label);
 
     actorsComboBox = new QComboBox;
-    actorsComboBox->setFixedWidth(100);
-    actorsComboBox->setStyleSheet("color:black;background-color:white");
+    actorsComboBox->setStyleSheet("color:black;background-color:white;margin:10");
     ui->toolBar->addWidget(actorsComboBox);
 
     QObject::connect(actorsComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(currentModuleChanged(QString)));
@@ -111,14 +110,13 @@ void MainWindow::AddLightIntensityControl()
     ui->toolBar->addWidget(label);
 
     lightIntensitySlider = new QSlider(Qt::Horizontal);
-    lightIntensitySlider->setFixedWidth(60);
+    lightIntensitySlider->setFixedWidth(100);
     lightIntensitySlider->setMaximum(100);
     lightIntensitySlider->setMinimum(1);
     lightIntensitySlider->setValue(10);
     ui->toolBar->addWidget(lightIntensitySlider);
 
     lightIntensityEdit = new QLineEdit();
-    lightIntensityEdit->setFixedWidth(50);
     lightIntensityEdit->setValidator(validator);
     lightIntensityEdit->setText(QString::number(sliderValueToIntensity(lightIntensitySlider->value(), 10.0)));
     ui->toolBar->addWidget(lightIntensityEdit);
@@ -138,7 +136,7 @@ void MainWindow::AddOpacityControl()
     ui->toolBar->addWidget(label);
 
     opacitySlider = new QSlider(Qt::Horizontal);
-    opacitySlider->setFixedWidth(50);
+    opacitySlider->setFixedWidth(100);
     opacitySlider->setMaximum(100);
     opacitySlider->setMinimum(0);
     opacitySlider->setValue(100);
@@ -146,7 +144,6 @@ void MainWindow::AddOpacityControl()
 
     auto value = sliderValueToIntensity(opacitySlider->value(), 100.0);
     opacityEdit = new QLineEdit();
-    opacityEdit->setFixedWidth(50);
     opacityEdit->setValidator(validator);
     opacityEdit->setText(QString::number(value));
     ui->toolBar->addWidget(opacityEdit);
