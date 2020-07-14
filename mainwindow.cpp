@@ -38,7 +38,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     QObject::connect(ui->actionShow_Axes, SIGNAL(triggered()), this, SLOT(showAxesChanged()));
     QObject::connect(ui->actionLoad_Texture, SIGNAL(triggered()), this, SLOT(loadTextureChanged()));
-    QObject::connect(ui->actionDepth_Sorting, SIGNAL(triggered()), this, SLOT(depthSortingChanged()));
     QObject::connect(ui->actionPick_with_Animation, SIGNAL(triggered()), this, SLOT(animateHighlightChanged()));
 
     InitProperties();
@@ -72,7 +71,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::InitProperties()
 {
-    isEnableDepthSorting = false;
     loadTexture = false;
     isAnimatePick = false;
 }
@@ -228,11 +226,6 @@ void MainWindow::loadTextureChanged()
     loadTexture = ui->actionLoad_Texture->isChecked();
 }
 
-void MainWindow::depthSortingChanged()
-{
-    isEnableDepthSorting = ui->actionDepth_Sorting->isChecked();
-}
-
 void MainWindow::currentModuleChanged(QString moduleName)
 {
     qDebug() << "currentActorChanged(QString): " << moduleName << endl;
@@ -353,7 +346,7 @@ void MainWindow::setBackgroundColor()
 
 void MainWindow::openFile(const QString &fileName)
 {
-    ui->sceneWidget->ImportObj(fileName.toStdString(), loadTexture, isEnableDepthSorting);
+    ui->sceneWidget->ImportObj(fileName.toStdString(), loadTexture);
     actorsComboBox->clear();
     const std::vector<std::string>& items = ui->sceneWidget->GetPickableItems();
     for (size_t i = 0; i < items.size(); i++) {

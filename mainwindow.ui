@@ -41,7 +41,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>24</height>
+     <height>18</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -64,7 +64,6 @@
     </property>
     <addaction name="actionLoad_Texture"/>
     <addaction name="actionPick_with_Animation"/>
-    <addaction name="actionDepth_Sorting"/>
     <addaction name="actionShow_Axes"/>
    </widget>
    <addaction name="menuFile"/>
@@ -135,17 +134,6 @@
    </property>
    <property name="text">
     <string>Pick with Animation</string>
-   </property>
-  </action>
-  <action name="actionDepth_Sorting">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Depth Sorting</string>
    </property>
   </action>
   <action name="actionShow_Axes">

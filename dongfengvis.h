@@ -48,7 +48,7 @@ public:
     ~DongfengVis();
 
     // load obj data from file
-    void ImportObj(const std::string& fileName, vtkRenderer* renderer, bool loadTexture = true, bool enableDepthSort = false);
+    void ImportObj(const std::string& fileName, vtkRenderer* renderer, bool loadTexture = true);
 
     // predefine animations
     void AnimateDaofu(double start = 0, double end = 1);
@@ -56,8 +56,10 @@ public:
     void AnimateShengjianggan(double start = 0, double end = 1);
     void AnimateZuobanHorizontal(double start = 0, double end = 1);
     void AnimateZuobanVertical();
+    void AnimateZuobanVertical(double start, double end);
     void AnimateYoubanHorizontal(double start = 0, double end = 1);
     void AnimateYoubanVertical();
+    void AnimateYoubanVertical(double start, double end);
 
     void AnimateHighlight(const std::string &moduleName, const HighlightArguments& args);
 
@@ -99,8 +101,6 @@ public:
     double GetOpacity() const { return _opacity; }
     void SetOpacity(double opacity);
     void SetColor(double r, double g, double b);
-
-    void EnableDepthSort(vtkRenderer* renderer);
 
 private:
     ObjImporter *_objImporter;

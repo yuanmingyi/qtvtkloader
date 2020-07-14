@@ -80,7 +80,7 @@ void DongfengVis::SetColor(double r, double g, double b)
     }
 }
 
-void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, bool loadTexture, bool enableDepthSort)
+void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, bool loadTexture)
 {
     // remmove old actors
     auto configFile = vtksys::SystemTools::GetFilenamePath(filename) + "/" + vtksys::SystemTools::GetFilenameWithoutLastExtension(filename) + ".txt";
@@ -91,9 +91,6 @@ void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, 
     }
     _objImporter->Import(filename.data(), configFile.data(), loadTexture);
     SaveActorProperties();
-    if (enableDepthSort && renderer) {
-        EnableDepthSort(renderer);
-    }
     root = _objImporter->GetRootObject();
     if (root && renderer) {
         renderer->AddViewProp(root);
@@ -140,6 +137,15 @@ void DongfengVis::AnimateZuobanVertical()
     animation->Stop();
 }
 
+void DongfengVis::AnimateZuobanVertical(double start, double end)
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, start, end);
+    animation->Play();
+    animation->Stop();
+}
+
 void DongfengVis::AnimateYoubanHorizontal(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
@@ -156,6 +162,15 @@ void DongfengVis::AnimateYoubanVertical()
     animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, 0, -0.5, 0, 0.25);
     animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, -0.5, 0.5, 0.25, 0.75);
     animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, 0.5, 0, 0.75, 1);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateYoubanVertical(double start, double end)
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetRenderMethod(_renderMethod);
+    animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
 }
@@ -445,26 +460,6 @@ void DongfengVis::SaveActorProperties()
     for (auto it = modules.begin(); it != modules.end(); it++) {
         _moduleNames.push_back(it->first);
         _highlightFlags[it->first] = false;
-    }
-}
-
-void DongfengVis::EnableDepthSort(vtkRenderer* renderer)
-{
-    std::cout << "enable depth sort for actors" << std::endl;
-    auto actors = _objImporter->GetActors();
-    for (auto it = actors.begin(); it != actors.end(); it++) {
-        vtkNew<vtkDepthSortPolyData> depthSort;
-        auto mapper = (*it)->GetMapper();
-        auto pd = dynamic_cast<vtkAppendPolyData*>(mapper->GetInput());
-        depthSort->SetInputConnection(pd->GetOutputPort());
-        depthSort->SetDirectionToBackToFront();
-        depthSort->SetVector(1, 1, 1);
-        depthSort->SetCamera(renderer->GetActiveCamera());
-        depthSort->SortScalarsOff(); // do not really need this here
-        // Bring it to the mapper's input
-        mapper->SetInputConnection(depthSort->GetOutputPort());
-        depthSort->Update();
-        (*it)->SetMapper(mapper);
     }
 }
 

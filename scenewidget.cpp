@@ -83,10 +83,10 @@ SceneWidget::~SceneWidget()
     delete _dongfeng;
 }
 
-void SceneWidget::ImportObj(const std::string& filename, bool loadTexture, bool isEnableDepthSorting)
+void SceneWidget::ImportObj(const std::string& filename, bool loadTexture)
 {
     StartTimer();
-    _dongfeng->ImportObj(filename, _renderer, loadTexture, !_useDepthPeeling && isEnableDepthSorting);
+    _dongfeng->ImportObj(filename, _renderer, loadTexture);
     EndTimer("Impoort time:");
     _renderer->ResetCamera();
     GetInteractor()->Render();

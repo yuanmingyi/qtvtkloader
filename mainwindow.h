@@ -38,7 +38,6 @@ public slots:
     void showAxesChanged();
     void animateHighlightChanged();
     void loadTextureChanged();
-    void depthSortingChanged();
 
     void animateDaofu();
     void animateBiantianxian();
@@ -87,7 +86,6 @@ private:
     bool isYoubanHorizontalOpen;
     bool isAnimatePick;
     bool loadTexture;
-    bool isEnableDepthSorting;
 
     void InitProperties();
     void AddActorComboBox();
