@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include <QMessageBox>
+#include <QCloseEvent>
 #include <QFile>
 #include <QFileDialog>
 #include <QLineEdit>
@@ -14,6 +15,8 @@
 #include <QColorDialog>
 #include <float.h>
 
+static std::string camerasFilePath = "./cameras.txt";
+static size_t cameraIndex = 0;
 
 double sliderValueToIntensity(int sliderValue, double scale)
 {
@@ -39,9 +42,11 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionShow_Axes, SIGNAL(triggered()), this, SLOT(showAxesChanged()));
     QObject::connect(ui->actionLoad_Texture, SIGNAL(triggered()), this, SLOT(loadTextureChanged()));
     QObject::connect(ui->actionPick_with_Animation, SIGNAL(triggered()), this, SLOT(animateHighlightChanged()));
+    QObject::connect(ui->actionSaveCamera, SIGNAL(triggered()), this, SLOT(addCamera()));
 
     InitProperties();
     AddStatusbarLabel();
+    AddCamerasComboBox();
     AddActorComboBox();
     AddLightIntensityControl();
     AddOpacityControl();
@@ -50,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    delete camerasComboBox;
     delete actorsComboBox;
     delete lightIntensitySlider;
     delete lightIntensityEdit;
@@ -80,6 +86,20 @@ void MainWindow::AddStatusbarLabel()
     statusLabel = new QLabel;
     statusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     ui->statusbar->addWidget(statusLabel);
+}
+
+void MainWindow::AddCamerasComboBox()
+{
+    auto label = new QLabel;
+    label->setText(tr("cameras:"));
+    label->setMargin(5);
+    ui->toolBar->addWidget(label);
+
+    camerasComboBox = new QComboBox;
+    camerasComboBox->setStyleSheet("color:black;background-color:white;margin:10");
+    ui->toolBar->addWidget(camerasComboBox);
+
+    QObject::connect(camerasComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(currentCameraChanged(QString)));
 }
 
 void MainWindow::AddActorComboBox()
@@ -209,6 +229,35 @@ void MainWindow::showOpenFileDialog()
     if (filename.endsWith(".obj")) {
         openFile(fileName);
     }
+}
+
+void MainWindow::addCamera()
+{
+    if (ui->sceneWidget->IsImported())
+    {
+        qDebug() << "add new camera: " << cameraIndex << endl;
+        auto camera = QString::number(cameraIndex++);
+        ui->sceneWidget->SaveCurrentCamera(camera.toStdString());
+        camerasComboBox->addItem(camera);
+    }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    // save the cameras
+    if (ui->sceneWidget->IsImported())
+    {
+        qDebug() << "Save cameras to file: " << camerasFilePath << endl;
+        ui->sceneWidget->SaveCameras(camerasFilePath.toStdString());
+    }
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::currentCameraChanged(QString name)
+{
+    std::string stdName = name.toStdString();
+    qDebug() << "restore camera: " << name << endl;
+    ui->sceneWidget->RestoreCamera(stdName, false);
 }
 
 void MainWindow::showAxesChanged()
@@ -346,12 +395,36 @@ void MainWindow::setBackgroundColor()
 
 void MainWindow::openFile(const QString &fileName)
 {
+    if (ui->sceneWidget->IsImported())
+    {
+        qDebug() << "save cameras to file: " << camerasFilePath << endl;
+        ui->sceneWidget->SaveCameras(camerasFilePath.toStdString());
+    }
+
     ui->sceneWidget->ImportObj(fileName.toStdString(), loadTexture);
+
+    QFileInfo info(fileName);
+    camerasFilePath = info.dir().filePath("cameras.txt");
+    QFileInfo camerasFileInfo(camerasFilePath);
+    if (camerasFileInfo.exists())
+    {
+        qDebug() << "load cameras from file: " << camerasFilePath << endl;
+        ui->sceneWidget->LoadCameras(camerasFilePath.toStdString());
+    }
+
+    camerasComboBox->clear();
+    const std::vector<std::string>& cameras = ui->sceneWidget->GetCameras();
+    for (size_t i = 0; i < cameras.size(); i++) {
+        camerasComboBox->addItem(QString::fromStdString(cameras[i]));
+    }
+    cameraIndex = cameras.size();
+
     actorsComboBox->clear();
     const std::vector<std::string>& items = ui->sceneWidget->GetPickableItems();
     for (size_t i = 0; i < items.size(); i++) {
         actorsComboBox->addItem(QString::fromStdString(items[i]));
     }
+
     isDaofuOpen = false;
     isBiantianxianOpen = false;
     isShengjiangganOpen = false;

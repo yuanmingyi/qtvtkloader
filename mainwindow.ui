@@ -41,7 +41,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>18</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -82,6 +82,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionOpenFile"/>
+   <addaction name="actionSaveCamera"/>
    <addaction name="separator"/>
   </widget>
   <action name="actionOpenFile">
@@ -142,6 +143,18 @@
    </property>
    <property name="text">
     <string>Show Axes</string>
+   </property>
+  </action>
+  <action name="actionSaveCamera">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/camera-50.png</normaloff>:/icons/camera-50.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save camera</string>
+   </property>
+   <property name="toolTip">
+    <string>Save Current Camera</string>
    </property>
   </action>
  </widget>

@@ -85,9 +85,11 @@ SceneWidget::~SceneWidget()
 
 void SceneWidget::ImportObj(const std::string& filename, bool loadTexture)
 {
+    _isFullImported = false;
     StartTimer();
     _dongfeng->ImportObj(filename, _renderer, loadTexture);
-    EndTimer("Impoort time:");
+    EndTimer("Import time:");
+    _isFullImported = true;
     _renderer->ResetCamera();
     GetInteractor()->Render();
 }
@@ -215,9 +217,14 @@ void SceneWidget::RestoreCamera(const std::string& cameraName, bool animate)
     if (it != _cameras.end()) {
         if (!animate) {
             ApplyCamaraInfo(it->second);
+            GetInteractor()->Render();
+            QCoreApplication::processEvents();
         } else {
             vtkNew<CameraAnimation> animation;
-            animation->Play([this]() { this->GetInteractor()->Render(); }, _renderer, GetCameraInfo(), it->second, 1);
+            animation->Play([this]() {
+                this->GetInteractor()->Render();
+                QCoreApplication::processEvents();
+            }, _renderer, GetCameraInfo(), it->second, 1);
         }
     } else {
         qDebug() << "camera not found: " << cameraName.data() << endl;
@@ -229,12 +236,16 @@ void SceneWidget::LoadCameras(const std::string& filepath)
     std::ifstream ifs(filepath);
     _cameras.clear();
     _cameraNames.clear();
-    while (ifs.eof()) {
+    while (!ifs.eof()) {
         std::string moduleName;
         CameraInfo info;
-        ifs >> moduleName >> info.Roll
+        ifs >> moduleName >> info.ViewAngle
+                >> info.ViewUp[0] >> info.ViewUp[1] >> info.ViewUp[2]
                 >> info.Position[0] >> info.Position[1] >> info.Position[2]
                 >> info.FocalPoint[0] >> info.FocalPoint[1] >> info.FocalPoint[2];
+        if (moduleName.empty()) {
+            continue;
+        }
         if (_cameras.find(moduleName) == _cameras.end()) {
             _cameraNames.push_back(moduleName);
         }
@@ -248,9 +259,10 @@ void SceneWidget::SaveCameras(const std::string& filepath)
     std::ofstream ofs(filepath);
     for (auto it = _cameras.begin(); it != _cameras.end(); it++) {
         auto info = it->second;
-        ofs << it->first << " " << info.Roll << std::endl
-            << info.Position[0] << " " << info.Position[1] << info.Position[2] << std::endl
-            << info.FocalPoint[0] << " " << info.FocalPoint[1] << info.FocalPoint[2] << std::endl;
+        ofs << it->first << " " << info.ViewAngle << std::endl
+            << info.ViewUp[0] << " " << info.ViewUp[1] << " " << info.ViewUp[2] << std::endl
+            << info.Position[0] << " " << info.Position[1] << " " << info.Position[2] << std::endl
+            << info.FocalPoint[0] << " " << info.FocalPoint[1] << " " << info.FocalPoint[2] << std::endl;
     }
     ofs.close();
 }
@@ -259,7 +271,8 @@ CameraInfo SceneWidget::GetCameraInfo()
 {
     CameraInfo info;
     auto camera = _renderer->GetActiveCamera();
-    info.Roll = camera->GetRoll();
+    info.ViewAngle = camera->GetViewAngle();
+    camera->GetViewUp(info.ViewUp);
     camera->GetPosition(info.Position);
     camera->GetFocalPoint(info.FocalPoint);
     return info;
@@ -268,7 +281,9 @@ CameraInfo SceneWidget::GetCameraInfo()
 void SceneWidget::ApplyCamaraInfo(const CameraInfo& cameraInfo)
 {
     auto camera = _renderer->GetActiveCamera();
-    camera->SetRoll(cameraInfo.Roll);
+    camera->SetViewAngle(cameraInfo.ViewAngle);
+    camera->SetViewUp(cameraInfo.ViewUp);
     camera->SetPosition(cameraInfo.Position);
     camera->SetFocalPoint(cameraInfo.FocalPoint);
+    _renderer->ResetCameraClippingRange();
 }

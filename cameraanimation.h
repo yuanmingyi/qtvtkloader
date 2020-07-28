@@ -12,6 +12,8 @@ struct CameraInfo
 {
     double Position[3];
     double FocalPoint[3];
+    double ViewUp[3];
+    double ViewAngle;
     double Roll;
 };
 

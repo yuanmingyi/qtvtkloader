@@ -28,6 +28,9 @@ public slots:
     //! Show the 'Open file...' dialog
     void showOpenFileDialog();
 
+    void addCamera();
+    void currentCameraChanged(QString);
+
     void currentModuleChanged(QString);
     void currentModuleChanged(std::string);
     void lightSliderValueChanged(int);
@@ -57,15 +60,20 @@ protected:
     \param[in] fileName The name of the file including the path
   */
     void openFile(const QString &fileName);
+    void loadCameras(const QString &fileName);
+    void saveCameras(const QString &fileName);
+    void closeEvent(QCloseEvent *event);
 
 private:
     Ui::MainWindow *ui;
     QComboBox* actorsComboBox;
+    QComboBox* camerasComboBox;
     QSlider* lightIntensitySlider;
     QLineEdit* lightIntensityEdit;
     QSlider* opacitySlider;
     QLineEdit* opacityEdit;
     QLabel* statusLabel;
+    QString camerasFilePath;
 
     QPushButton* setModelColorButton;
     QPushButton* setHighlightColorButton;
@@ -93,6 +101,7 @@ private:
     void AddOpacityControl();
     void AddStatusbarLabel();
     void AddPushButtons();
+    void AddCamerasComboBox();
 };
 
 #endif // MAINWINDOW_H
