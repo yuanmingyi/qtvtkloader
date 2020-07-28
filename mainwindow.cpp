@@ -257,7 +257,7 @@ void MainWindow::currentCameraChanged(QString name)
 {
     std::string stdName = name.toStdString();
     qDebug() << "restore camera: " << name << endl;
-    ui->sceneWidget->RestoreCamera(stdName, false);
+    ui->sceneWidget->RestoreCamera(stdName, isAnimatePick);
 }
 
 void MainWindow::showAxesChanged()

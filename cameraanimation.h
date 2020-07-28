@@ -14,7 +14,6 @@ struct CameraInfo
     double FocalPoint[3];
     double ViewUp[3];
     double ViewAngle;
-    double Roll;
 };
 
 class CameraAnimation : public vtkAnimationScene

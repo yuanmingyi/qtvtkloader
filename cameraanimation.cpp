@@ -7,11 +7,11 @@ void Print3d(std::string hint, double* value)
     std::cout << hint << "(" << value[0] << ", " << value[1] << ", " << value[2] << ")" << std::endl;
 }
 
-double* CalcNext(const double* current, const double* target, double ratio, double* next)
+double* CalcNext(const double* start, const double* target, double ratio, double* next)
 {
-    vtkMath::Subtract(target, current, next);
+    vtkMath::Subtract(target, start, next);
     vtkMath::MultiplyScalar(next, ratio);
-    vtkMath::Add(current, next, next);
+    vtkMath::Add(start, next, next);
     return next;
 }
 
@@ -41,6 +41,9 @@ void CameraAnimation::Play(std::function<void()> renderMethod, vtkRenderer* rend
 CameraAnimationCue::CameraAnimationCue()
 {
     _renderer = nullptr;
+    SetStartTime(0);
+    SetEndTime(1);
+    SetTimeModeToNormalized();
 }
 
 CameraAnimationCue::~CameraAnimationCue()
@@ -62,25 +65,19 @@ void CameraAnimationCue::Setup(vtkRenderer* renderer, const CameraInfo &startCam
 void CameraAnimationCue::StartCueInternal()
 {
     std::cout << "start to move camera" << std::endl;
-    std::cout << "Start roll angle: " << _startCamera.Roll << std::endl;
+    std::cout << "Start view angle: " << _startCamera.ViewAngle << std::endl;
     vtkAnimationCue::StartCueInternal();
 }
 
 void CameraAnimationCue::TickInternal(double currentTime, double deltaTime, double clockTime)
 {
     double delta[3];
-    if (this->GetTimeMode() == TIMEMODE_RELATIVE)
-    {
-        std::cout << "Cue is relative time mode, convert to normalized mode first" << std::endl;
-        // make the time normalized
-        currentTime = currentTime / (this->GetEndTime() - this->GetStartTime());
-    }
-
     auto camera = _renderer->GetActiveCamera();
     camera->SetPosition(CalcNext(_startCamera.Position, _endCamera.Position, currentTime, delta));
     camera->SetFocalPoint(CalcNext(_startCamera.FocalPoint, _endCamera.FocalPoint, currentTime, delta));
+    camera->SetViewUp(CalcNext(_startCamera.ViewUp, _endCamera.ViewUp, currentTime, delta));
     // camera should be towards the target
-    auto dist = _endCamera.Roll - _startCamera.Roll;
+    auto dist = _endCamera.ViewAngle - _startCamera.ViewAngle;
     if (dist > 180)
     {
         dist -= -360;
@@ -89,8 +86,9 @@ void CameraAnimationCue::TickInternal(double currentTime, double deltaTime, doub
     {
         dist += 360;
     }
-    camera->SetRoll(_startCamera.Roll + dist * currentTime);
+    camera->SetViewAngle(_startCamera.ViewAngle + dist * currentTime);
     _renderer->ResetCameraClippingRange();
+    Print3d("[TickInternal()] camera position: ", camera->GetPosition());
 
     vtkAnimationCue::TickInternal(currentTime, deltaTime, clockTime);
 }
@@ -100,10 +98,9 @@ void CameraAnimationCue::EndCueInternal()
     vtkCamera* camera = _renderer->GetActiveCamera();
     camera->SetPosition(_endCamera.Position);
     camera->SetFocalPoint(_endCamera.FocalPoint);
-    camera->SetRoll(_endCamera.Roll);
+    camera->SetViewUp(_endCamera.ViewUp);
+    camera->SetViewAngle(_endCamera.ViewAngle);
     _renderer->ResetCameraClippingRange();
-    std::cout << "Camera new roll angle: " << camera->GetRoll() << std::endl;
-    std::cout << "Camera view up dot camera direction: " << vtkMath::Dot(camera->GetViewUp(), camera->GetDirectionOfProjection()) << std::endl;
 
     vtkAnimationCue::EndCueInternal();
 }
