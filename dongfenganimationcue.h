@@ -17,7 +17,7 @@ public:
 
 protected:
     DongfengAnimationCue();
-    ~DongfengAnimationCue();
+    ~DongfengAnimationCue() override;
 
     virtual void StartCueInternal() override;
     virtual void TickInternal(double currentTime, double deltaTime, double clockTime) override;

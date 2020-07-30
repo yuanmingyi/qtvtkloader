@@ -16,9 +16,15 @@
 #include <QCoreApplication>
 #include <QDebug>
 
+
 SceneWidget::SceneWidget(QWidget *parent)
   : QVTKOpenGLNativeWidget(parent)
 {
+    InsideSelectedOpacity = 0.3;
+    CameraAnimationSpeed = 1;
+    HighlightAnimationTime = 1;
+
+    _moduleAnimationSpeed = 1;
     _isTiming = false;
     _isFullImported = false;
 
@@ -41,6 +47,8 @@ SceneWidget::SceneWidget(QWidget *parent)
     _modelColor[1] = 0.7;
     _modelColor[2] = 0.7;
 
+    _opacity = 1.0;
+
     _axes->SetVisibility(false);
     _axes->SetTotalLength(50, 50, 50);
     _axes->SetShaftTypeToLine();
@@ -59,7 +67,13 @@ SceneWidget::SceneWidget(QWidget *parent)
     SetRenderWindow(window.Get());
     GetRenderWindow()->AddRenderer(_renderer);
     _dongfeng = new DongfengVis();
-    _dongfeng->SetRenderMethod([this]() {
+    _dongfeng->SetAnimationSpeed(_moduleAnimationSpeed);
+    _dongfeng->SetRenderMethod([this](const std::string& module) {
+        auto resetCameraInAnimation = this->_resetCameraInAnimation.find(module);
+        if (resetCameraInAnimation != this->_resetCameraInAnimation.end()
+                && resetCameraInAnimation->second) {
+            this->_renderer->ResetCamera();
+        }
         this->GetInteractor()->Render();
         QCoreApplication::processEvents();
     });
@@ -83,6 +97,12 @@ SceneWidget::~SceneWidget()
     delete _dongfeng;
 }
 
+void SceneWidget::SetModuleAnimationSpeed(double speed)
+{
+    _moduleAnimationSpeed = speed;
+    _dongfeng->SetAnimationSpeed(speed);
+}
+
 void SceneWidget::ImportObj(const std::string& filename, bool loadTexture)
 {
     _isFullImported = false;
@@ -91,12 +111,22 @@ void SceneWidget::ImportObj(const std::string& filename, bool loadTexture)
     EndTimer("Import time:");
     _isFullImported = true;
     _renderer->ResetCamera();
+    _zuodaofu = 0;
+    _youdaofu = 0;
+    _daofu = 0;
+    _biantianxian = 0;
+    _shengjianggan = 0;
+    _zuobanVertical = 0;
+    _youbanVertical = 0;
+    _zuobanHorizontal = 0;
+    _youbanHorizontal = 0;
     GetInteractor()->Render();
 }
 
 void SceneWidget::SetOpacity(double opacity)
 {
     std::cout << "set opacity: " << opacity << std::endl;
+    _opacity = opacity;
     _dongfeng->SetOpacity(opacity);
     GetInteractor()->Render();
 }
@@ -110,6 +140,11 @@ void SceneWidget::SetLightIntensity(double intensity)
 
 void SceneWidget::PickModule(const std::string& moduleName)
 {
+    if (_dongfeng->IsInsideModule(moduleName)) {
+        _dongfeng->SetOpacity(InsideSelectedOpacity);
+    } else {
+        _dongfeng->SetOpacity(_opacity);
+    }
     _dongfeng->Highlight(moduleName, DongfengVis::HighlightArguments(_highlightColor));
     GetInteractor()->Render();
 }
@@ -163,6 +198,10 @@ void SceneWidget::SetBackgroundColor(double r, double g, double b)
 
 void SceneWidget::AnimateHighlight(const std::string& moduleName)
 {
+    DongfengVis::HighlightArguments args(_highlightColor);
+    args.otherOpacity =_dongfeng->IsInsideModule(moduleName) ?
+                InsideSelectedOpacity : _opacity;
+    args.time = HighlightAnimationTime;
     _dongfeng->AnimateHighlight(moduleName, DongfengVis::HighlightArguments(_highlightColor));
     GetInteractor()->Render();
 }
@@ -221,10 +260,10 @@ void SceneWidget::RestoreCamera(const std::string& cameraName, bool animate)
             QCoreApplication::processEvents();
         } else {
             vtkNew<CameraAnimation> animation;
-            animation->Play([this]() {
+            animation->Play([this](const std::string& vtkNotUsed(ctx)) {
                 this->GetInteractor()->Render();
                 QCoreApplication::processEvents();
-            }, _renderer, GetCameraInfo(), it->second, 1);
+            }, _renderer, GetCameraInfo(), it->second, CameraAnimationSpeed);
         }
     } else {
         qDebug() << "camera not found: " << cameraName.data() << endl;

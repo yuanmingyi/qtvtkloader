@@ -15,21 +15,39 @@
 
 const std::string DongfengVis::None = "none";
 const std::string DongfengVis::All = "all";
+const std::string DongfengVis::Zuodaofu = "zuodaofu";
+const std::string DongfengVis::Youdaofu = "youdaofu";
 const std::string DongfengVis::Daofu = "daofu";
 const std::string DongfengVis::Changbian = "changbian";
 const std::string DongfengVis::Duanbian = "duanbian";
 const std::string DongfengVis::Biantianxian = "biantianxian";
-const std::string DongfengVis::Zuoban = "zuobian";
-const std::string DongfengVis::Youban = "youban";
-const std::string DongfengVis::Zuoban1 = "zuoban1";
-const std::string DongfengVis::Youban1 = "youban1";
+const std::string DongfengVis::ZuobanVertical = "zuoban";
+const std::string DongfengVis::YoubanVertical = "youban";
+const std::string DongfengVis::ZuobanHorizontal = "zuoban1";
+const std::string DongfengVis::YoubanHorizontal = "youban1";
 const std::string DongfengVis::Shengjianggan = "shengjianggan";
 const std::string DongfengVis::Shengjianggan1 = "shengjianggan1";
 const std::string DongfengVis::Shengjianggan2 = "shengjianggan2";
 const std::string DongfengVis::Shengjianggan3 = "shengjianggan3";
 const std::string DongfengVis::Shengjianggan4 = "shengjianggan4";
+const std::string DongfengVis::Dipan = "dipan";
+const std::string DongfengVis::Luntai = "luntai";
+const std::string DongfengVis::Zuoqianlun = "zuoqianlun";
+const std::string DongfengVis::Youqianlun = "youqianlun";
+const std::string DongfengVis::Zuohoulun = "zuohoulun";
+const std::string DongfengVis::Youhoulun = "youhoulun";
+const std::string DongfengVis::Zuojigui = "zuojigui";
+const std::string DongfengVis::Youjigui1 = "youjigui1";
+const std::string DongfengVis::Youjigui2 = "youjigui2";
+const std::string DongfengVis::Youjigui3 = "youjigui3";
 
-DongfengVis::HighlightArguments::HighlightArguments(const double* color, double opacity, double ambient, double diffuse, double specular, double specularPower)
+inline double _diff(double d1, double d2)
+{
+    return fabs(d1 - d2);
+}
+
+DongfengVis::HighlightArguments::HighlightArguments(const double* color,
+                                                    double opacity, double ambient, double diffuse, double specular, double specularPower, double otherOpacity, double time)
 {
     this->color[0] = color[0];
     this->color[1] = color[1];
@@ -39,6 +57,8 @@ DongfengVis::HighlightArguments::HighlightArguments(const double* color, double 
     this->diffuse = diffuse;
     this->specular = specular;
     this->specularPower = specularPower;
+    this->otherOpacity = otherOpacity;
+    this->time = time;
 }
 
 DongfengVis::DongfengVis()
@@ -46,6 +66,7 @@ DongfengVis::DongfengVis()
     _objImporter = new ObjImporter;
     _renderMethod = nullptr;
     _opacity = 1.0;
+    _speed = 1.0;
     _color[0] = 1.0;
     _color[1] = 1.0;
     _color[2] = 1.0;
@@ -55,6 +76,15 @@ DongfengVis::~DongfengVis()
 {
     ClearTextures();
     delete _objImporter;
+}
+
+bool DongfengVis::IsInsideModule(const std::string& name) const
+{
+    return name == DongfengVis::Dipan
+            || name == DongfengVis::Zuojigui
+            || name == DongfengVis::Youjigui1
+            || name == DongfengVis::Youjigui2
+            || name == DongfengVis::Youjigui3;
 }
 
 void DongfengVis::SetOpacity(double opacity)
@@ -97,10 +127,31 @@ void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, 
     }
 }
 
+void DongfengVis::AnimateZuodaofu(double start, double end)
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::Zuodaofu);
+    animation->Add([this](double value) { this->RotateZuodaofu(std::move(value)); }, start, end, 0, 1);
+    animation->Play();
+    animation->Stop();
+}
+
+void DongfengVis::AnimateYoudaofu(double start, double end)
+{
+    vtkNew<DongfengAnimation> animation;
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::Youdaofu);
+    animation->Add([this](double value) { this->RotateYoudaofu(std::move(value)); }, start, end, 0, 1);
+    animation->Play();
+    animation->Stop();
+}
+
 void DongfengVis::AnimateDaofu(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::Daofu);
     animation->Add([this](double value) { this->RotateDaofu(std::move(value)); }, start, end, 0, 1);
     animation->Play();
     animation->Stop();
@@ -109,7 +160,8 @@ void DongfengVis::AnimateDaofu(double start, double end)
 void DongfengVis::AnimateBiantianxian(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::Biantianxian);
     animation->Add([this](double value) { this->RotateChangbian(std::move(value)); }, start, end);
     animation->Add([this](double value) { this->RotateDuanbian(std::move(value)); }, start, end);
     animation->Add([this](double value) { this->RotateBiantianxian(std::move(value)); }, start, end);
@@ -120,7 +172,8 @@ void DongfengVis::AnimateBiantianxian(double start, double end)
 void DongfengVis::AnimateZuobanHorizontal(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::ZuobanHorizontal);
     animation->Add([this](double value) { this->RotateZuoban1(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
@@ -129,7 +182,8 @@ void DongfengVis::AnimateZuobanHorizontal(double start, double end)
 void DongfengVis::AnimateZuobanVertical()
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::ZuobanVertical);
     animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, 0, -0.5, 0, 0.25);
     animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, -0.5, 0.5, 0.25, 0.75);
     animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, 0.5, 0, 0.75, 1);
@@ -140,7 +194,8 @@ void DongfengVis::AnimateZuobanVertical()
 void DongfengVis::AnimateZuobanVertical(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::ZuobanVertical);
     animation->Add([this](double value) { this->RotateZuoban(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
@@ -149,7 +204,8 @@ void DongfengVis::AnimateZuobanVertical(double start, double end)
 void DongfengVis::AnimateYoubanHorizontal(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::YoubanHorizontal);
     animation->Add([this](double value) { this->RotateYouban1(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
@@ -158,7 +214,8 @@ void DongfengVis::AnimateYoubanHorizontal(double start, double end)
 void DongfengVis::AnimateYoubanVertical()
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::YoubanVertical);
     animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, 0, -0.5, 0, 0.25);
     animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, -0.5, 0.5, 0.25, 0.75);
     animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, 0.5, 0, 0.75, 1);
@@ -169,7 +226,8 @@ void DongfengVis::AnimateYoubanVertical()
 void DongfengVis::AnimateYoubanVertical(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::YoubanVertical);
     animation->Add([this](double value) { this->RotateYouban(std::move(value)); }, start, end);
     animation->Play();
     animation->Stop();
@@ -178,7 +236,8 @@ void DongfengVis::AnimateYoubanVertical(double start, double end)
 void DongfengVis::AnimateShengjianggan(double start, double end)
 {
     vtkNew<DongfengAnimation> animation;
-    animation->SetRenderMethod(_renderMethod);
+    animation->SetAnimationSpeed(_speed);
+    animation->SetRenderMethod(_renderMethod, DongfengVis::Shengjianggan);
     animation->Add([this](double value) { this->LiftShengjianggan(std::move(value)); }, start, end);
     animation->Add([this](double value) { this->LiftShengjianggan1(std::move(value)); }, start, end);
     animation->Add([this](double value) { this->LiftShengjianggan2(std::move(value)); }, start, end);
@@ -191,6 +250,7 @@ void DongfengVis::AnimateShengjianggan(double start, double end)
 void DongfengVis::AnimateHighlight(const std::string &moduleName, const HighlightArguments& args)
 {
     vtkNew<DongfengAnimation> animation;
+    animation->SetTime(args.time);
     Highlight(DongfengVis::None, args);
     if (_highlightFlags.find(moduleName) == _highlightFlags.end()) {
         // no module found
@@ -210,6 +270,11 @@ void DongfengVis::AnimateHighlight(const std::string &moduleName, const Highligh
             this->HighlightOff(moduleName);
         }
     }, 0, 1);
+    if (args.otherOpacity >= 0 && args.otherOpacity <= 1 && _diff(args.otherOpacity, _opacity) > 0.001) {
+        animation->Add([this](double value) {
+            this->SetOpacity(value);
+        }, _opacity, args.otherOpacity);
+    }
     animation->Play();
     animation->Stop();
 }
@@ -274,9 +339,35 @@ void DongfengVis::HighlightOff(const std::string &moduleName)
     _highlightFlags[moduleName] = false;
 }
 
+void DongfengVis::RotateZuodaofu(double rate)
+{
+    auto daofu = _objImporter->GetAssemblyMap().at(DongfengVis::Zuodaofu);
+    auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
+    std::cout << "rotate zuodaofu for " << degree << " degree" << std::endl;
+    vtkNew<vtkTransform> tf;
+    double* origin = daofu->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
+    tf->RotateX(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
+    daofu->SetUserTransform(tf);
+}
+
+void DongfengVis::RotateYoudaofu(double rate)
+{
+    auto daofu = _objImporter->GetAssemblyMap().at(DongfengVis::Youdaofu);
+    auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
+    std::cout << "rotate youdaofu for " << degree << " degree" << std::endl;
+    vtkNew<vtkTransform> tf;
+    double* origin = daofu->GetOrigin();
+    tf->Translate(origin[0], origin[1], origin[2]);
+    tf->RotateX(degree);
+    tf->Translate(-origin[0], -origin[1], -origin[2]);
+    daofu->SetUserTransform(tf);
+}
+
 void DongfengVis::RotateDaofu(double rate)
 {
-    auto daofu = _objImporter->GetAssemblyMap().at("daofu");
+    auto daofu = _objImporter->GetAssemblyMap().at(DongfengVis::Daofu);
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
     std::cout << "rotate daofu for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -289,7 +380,7 @@ void DongfengVis::RotateDaofu(double rate)
 
 void DongfengVis::RotateChangbian(double rate)
 {
-    auto changbian = _objImporter->GetAssemblyMap().at("changbian");
+    auto changbian = _objImporter->GetAssemblyMap().at(DongfengVis::Changbian);
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
     std::cout << "rotate changbian for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -302,7 +393,7 @@ void DongfengVis::RotateChangbian(double rate)
 
 void DongfengVis::RotateDuanbian(double rate)
 {
-    auto duanbian = _objImporter->GetAssemblyMap().at("duanbian");
+    auto duanbian = _objImporter->GetAssemblyMap().at(DongfengVis::Duanbian);
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * -90;
     std::cout << "rotate duanbian for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -315,7 +406,7 @@ void DongfengVis::RotateDuanbian(double rate)
 
 void DongfengVis::RotateBiantianxian(double rate)
 {
-    auto biantianxian = _objImporter->GetAssemblyMap().at("biantianxian");
+    auto biantianxian = _objImporter->GetAssemblyMap().at(DongfengVis::Biantianxian);
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * -90;
     std::cout << "rotate biantianxian for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -328,7 +419,7 @@ void DongfengVis::RotateBiantianxian(double rate)
 
 void DongfengVis::RotateZuoban(double rate)
 {
-    auto zuoban = _objImporter->GetAssemblyMap().at("zuoban");
+    auto zuoban = _objImporter->GetAssemblyMap().at(DongfengVis::ZuobanVertical);
     auto degree = vtkMath::ClampValue(rate, -0.5, 0.5) * 90;
     std::cout << "rotate zuoban for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -341,7 +432,7 @@ void DongfengVis::RotateZuoban(double rate)
 
 void DongfengVis::RotateYouban(double rate)
 {
-    auto youban = _objImporter->GetAssemblyMap().at("youban");
+    auto youban = _objImporter->GetAssemblyMap().at(DongfengVis::YoubanVertical);
     auto degree = vtkMath::ClampValue(rate, -0.5, 0.5) * 90;
     std::cout << "rotate youban for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -354,7 +445,7 @@ void DongfengVis::RotateYouban(double rate)
 
 void DongfengVis::RotateZuoban1(double rate)
 {
-    auto zuoban1 = _objImporter->GetAssemblyMap().at("zuoban1");
+    auto zuoban1 = _objImporter->GetAssemblyMap().at(DongfengVis::ZuobanHorizontal);
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * -90;
     std::cout << "rotate zuoban1 for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -367,7 +458,7 @@ void DongfengVis::RotateZuoban1(double rate)
 
 void DongfengVis::RotateYouban1(double rate)
 {
-    auto youban1 = _objImporter->GetAssemblyMap().at("youban1");
+    auto youban1 = _objImporter->GetAssemblyMap().at(DongfengVis::YoubanHorizontal);
     auto degree = vtkMath::ClampValue(rate, 0.0, 1.0) * 90;
     std::cout << "rotate youban1 for " << degree << " degree" << std::endl;
     vtkNew<vtkTransform> tf;
@@ -380,7 +471,7 @@ void DongfengVis::RotateYouban1(double rate)
 
 void DongfengVis::LiftShengjianggan(double rate)
 {
-    auto shengjianggan = _objImporter->GetAssemblyMap().at("shengjianggan");
+    auto shengjianggan = _objImporter->GetAssemblyMap().at(DongfengVis::Shengjianggan);
     auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 10;
     std::cout << "lift shengjianggan for " << distance << std::endl;
     vtkNew<vtkTransform> tf;
@@ -390,7 +481,7 @@ void DongfengVis::LiftShengjianggan(double rate)
 
 void DongfengVis::LiftShengjianggan1(double rate)
 {
-    auto shengjianggan1 = _objImporter->GetAssemblyMap().at("shengjianggan1");
+    auto shengjianggan1 = _objImporter->GetAssemblyMap().at(DongfengVis::Shengjianggan1);
     auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 50;
     std::cout << "lift shengjianggan1 for " << distance << std::endl;
     vtkNew<vtkTransform> tf;
@@ -400,7 +491,7 @@ void DongfengVis::LiftShengjianggan1(double rate)
 
 void DongfengVis::LiftShengjianggan2(double rate)
 {
-    auto shengjianggan2 = _objImporter->GetAssemblyMap().at("shengjianggan2");
+    auto shengjianggan2 = _objImporter->GetAssemblyMap().at(DongfengVis::Shengjianggan2);
     auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 70;
     std::cout << "lift shengjianggan2 for " << distance << std::endl;
     vtkNew<vtkTransform> tf;
@@ -410,7 +501,7 @@ void DongfengVis::LiftShengjianggan2(double rate)
 
 void DongfengVis::LiftShengjianggan3(double rate)
 {
-    auto shengjianggan3 = _objImporter->GetAssemblyMap().at("shengjianggan3");
+    auto shengjianggan3 = _objImporter->GetAssemblyMap().at(DongfengVis::Shengjianggan3);
     auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 80;
     std::cout << "lift shengjianggan3 for " << distance << std::endl;
     vtkNew<vtkTransform> tf;
@@ -420,7 +511,7 @@ void DongfengVis::LiftShengjianggan3(double rate)
 
 void DongfengVis::LiftShengjianggan4(double rate)
 {
-    auto shengjianggan4 = _objImporter->GetAssemblyMap().at("shengjianggan4");
+    auto shengjianggan4 = _objImporter->GetAssemblyMap().at(DongfengVis::Shengjianggan4);
     auto distance = vtkMath::ClampValue(rate, 0.0, 1.0) * 100;
     std::cout << "lift shengjianggan4 for " << distance << std::endl;
     vtkNew<vtkTransform> tf;

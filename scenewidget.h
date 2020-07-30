@@ -32,6 +32,27 @@ public:
     ~SceneWidget();
 
     /*!
+     * \brief InsideSelectedOpacity 选择高亮内部部件时，表面部件的透明度，0为完全透明，1为完全不透明，默认0.3
+     */
+    double InsideSelectedOpacity;
+
+    /*!
+     * \brief CameraAnimationSpeed 相机动画移动速度，单位像素/秒，默认为1
+     */
+    double CameraAnimationSpeed;
+
+    /*!
+     * \brief HighlightAnimationTime 高亮动画播放时间，单位秒，默认为1
+     */
+    double HighlightAnimationTime;
+
+    /*!
+     * \brief ModuleAnimationSpeed 部件动画速度，默认为1，表示当前部件完成完整动作花费1秒，速度越快时间越短
+     */
+    double GetModuleAnimationSpeed() const { return _moduleAnimationSpeed; }
+    void SetModuleAnimationSpeed(double speed);
+
+    /*!
      * \fn void SceneWidget::ImportObj(const std::string& fileName, bool loadTexture = false)
      * \brief 从文件中导入模型
      * \param fileName: 模型文件名(.obj)
@@ -130,26 +151,26 @@ public:
 
     /// 动画打开或收起倒伏
     /// open: true为打开倒伏，false为收起倒伏
-    void AnimateDaofu(bool open = true) { open ? _dongfeng->AnimateDaofu(0, 1) : _dongfeng->AnimateDaofu(1, 0); }
+    void AnimateDaofu(bool open = true) { open ? AnimateDaofu(0, 1) : AnimateDaofu(1, 0); }
 
     /// 动画打开或者收起鞭天线
     /// open: true为打开鞭天线，false为收起鞭天线
-    void AnimateBiantianxian(bool open = true) { open ? _dongfeng->AnimateBiantianxian(0, 1) : _dongfeng->AnimateBiantianxian(1, 0); }
+    void AnimateBiantianxian(bool open = true) { open ? AnimateBiantianxian(0, 1) : AnimateBiantianxian(1, 0); }
 
     /// 动画展开或缩回升降杆
     /// open: true为全部展开升降杆，false为全部缩回升降杆
-    void AnimateShengjianggan(bool open = true) { open ? _dongfeng->AnimateShengjianggan(0, 1) : _dongfeng->AnimateShengjianggan(1, 0); }
+    void AnimateShengjianggan(bool open = true) { open ? AnimateShengjianggan(0, 1) : AnimateShengjianggan(1, 0); }
 
     /// 动画演示左侧板天线水平旋转
     /// open: true为从默认位置向外侧旋转90度，false为从外侧90度旋转回默认位置
-    void AnimateZuobanHorizontal(bool open = true) { open ? _dongfeng->AnimateZuobanHorizontal(0, 1) : _dongfeng->AnimateZuobanHorizontal(1, 0); }
+    void AnimateZuobanHorizontal(bool open = true) { open ? AnimateZuobanHorizontal(0, 1) : AnimateZuobanHorizontal(1, 0); }
 
     /// 动画演示左侧板天线俯仰旋转
     void AnimateZuobanVertical() { _dongfeng->AnimateZuobanVertical(); }
 
     /// 动画演示右侧板天线水平旋转
     /// open: true为从默认位置向外侧旋转90度，false为从外侧90度旋转回默认位置
-    void AnimateYoubanHorizontal(bool open = true) { open ? _dongfeng->AnimateYoubanHorizontal(0, 1) : _dongfeng->AnimateYoubanHorizontal(1, 0); }
+    void AnimateYoubanHorizontal(bool open = true) { open ? AnimateYoubanHorizontal(0, 1) : AnimateYoubanHorizontal(1, 0); }
 
     /// 动画演示右侧板天线俯仰旋转
     void AnimateYoubanVertical() { _dongfeng->AnimateYoubanVertical(); }
@@ -159,26 +180,171 @@ public:
     /// start: 动画开始位置（具体数值各方法解释）
     /// end: 动画结束位置（具体数值各方法解释）
 
+    /// 左倒伏动画。0表示水平位置，1表示垂直立起位置
+    void AnimateZuodaofu(double start = 0, double end = 1, bool updateCamera = true) {
+        _resetCameraInAnimation[DongfengVis::Zuodaofu] = updateCamera;
+        _dongfeng->AnimateZuodaofu(start, end);
+        _zuodaofu = end;
+    }
+
+    /// 右倒伏动画。0表示水平位置，1表示垂直立起位置
+    void AnimateYoudaofu(double start = 0, double end = 1, bool updateCamera = true) {
+        _resetCameraInAnimation[DongfengVis::Youdaofu] = updateCamera;
+        _dongfeng->AnimateYoudaofu(start, end);
+        _youdaofu = end;
+    }
+
     /// 倒伏动画。0表示水平位置，1表示垂直立起位置
-    void AnimateDaofu(double start = 0, double end = 1) { _dongfeng->AnimateDaofu(start, end); }
+    void AnimateDaofu(double start = 0, double end = 1, bool updateCamera = true) {
+        _resetCameraInAnimation[DongfengVis::Daofu] = updateCamera;
+        _dongfeng->AnimateDaofu(start, end);
+        _daofu = end;
+    }
 
     /// 鞭天线动画。0表示水平位置，1表示两侧完全打开，并且垂直立起位置
-    void AnimateBiantianxian(double start = 0, double end = 1) { _dongfeng->AnimateBiantianxian(start, end); }
+    void AnimateBiantianxian(double start = 0, double end = 1, bool updateCamera = true) {
+        _resetCameraInAnimation[DongfengVis::Biantianxian] = updateCamera;
+        _dongfeng->AnimateBiantianxian(start, end);
+        _biantianxian = end;
+    }
 
     /// 升降杆动画。0表示全部缩回位置，1表示全部展开的位置
-    void AnimateShengjianggan(double start = 0, double end = 1) { _dongfeng->AnimateShengjianggan(start, end); }
+    void AnimateShengjianggan(double start = 0, double end = 1, bool updateCamera = true) {
+        _resetCameraInAnimation[DongfengVis::Shengjianggan] = updateCamera;
+        _dongfeng->AnimateShengjianggan(start, end);
+        _shengjianggan = end;
+    }
 
     /// （车）左侧板天线水平旋转动画。0表示默认位置，1表示向外侧旋转90度位置
-    void AnimateZuobanHorizontal(double start = 0, double end = 1) { _dongfeng->AnimateZuobanHorizontal(start, end); }
+    void AnimateZuobanHorizontal(double start = 0, double end = 1, bool updateCamera = false) {
+        _resetCameraInAnimation[DongfengVis::ZuobanHorizontal] = updateCamera;
+        _dongfeng->AnimateZuobanHorizontal(start, end);
+        _zuobanHorizontal = end;
+    }
 
     /// （车）左侧板天线垂直旋转动画。0表示默认位置，-0.5表示上仰45度位置，0.5表示下俯45度位置
-    void AnimateZuobanVertical(double start, double end) { _dongfeng->AnimateZuobanVertical(start, end); }
+    void AnimateZuobanVertical(double start, double end, bool updateCamera = false) {
+        _resetCameraInAnimation[DongfengVis::ZuobanVertical] = updateCamera;
+        _dongfeng->AnimateZuobanVertical(start, end);
+        _zuobanVertical = end;
+    }
 
     /// （车）右侧板天线水平旋转动画。0表示默认位置，1表示向外侧旋转90度位置
-    void AnimateYoubanHorizontal(double start = 0, double end = 1) { _dongfeng->AnimateYoubanHorizontal(start, end); }
+    void AnimateYoubanHorizontal(double start = 0, double end = 1, bool updateCamera = false) {
+        _resetCameraInAnimation[DongfengVis::YoubanHorizontal] = updateCamera;
+        _dongfeng->AnimateYoubanHorizontal(start, end);
+        _youbanHorizontal = end;
+    }
 
     /// （车）右侧板天线垂直旋转动画。0表示默认位置，-0.5表示上仰45度位置，0.5表示下俯45度位置
-    void AnimateYoubanVertical(double start, double end) { _dongfeng->AnimateYoubanVertical(start, end); }
+    void AnimateYoubanVertical(double start, double end, bool updateCamera = false) {
+        _resetCameraInAnimation[DongfengVis::YoubanVertical] = updateCamera;
+        _dongfeng->AnimateYoubanVertical(start, end);
+        _youbanVertical = end;
+    }
+
+    /// 左倒伏动画。0表示水平位置，90表示垂直立起位置
+    void AnimateZuodaofuD(double start = 0, double end = 90, bool updateCamera = true) { AnimateZuodaofu(start / 90, end / 90, updateCamera); }
+
+    /// 右倒伏动画。0表示水平位置，90表示垂直立起位置
+    void AnimateYoudaofuD(double start = 0, double end = 90, bool updateCamera = true) { AnimateYoudaofu(start / 90, end / 90, updateCamera); }
+
+    /// 倒伏动画。0表示水平位置，90表示垂直立起位置
+    void AnimateDaofuD(double start = 0, double end = 90, bool updateCamera = true) { AnimateDaofu(start / 90, end / 90, updateCamera); }
+
+    /// 鞭天线动画。0表示水平位置，90表示两侧完全打开，并且垂直立起位置
+    void AnimateBiantianxianD(double start = 0, double end = 90, bool updateCamera = true) { AnimateBiantianxian(start / 90, end / 90, updateCamera); }
+
+    /// 升降杆动画。0表示全部缩回位置，8表示全部展开的位置(8米）
+    void AnimateShengjiangganM(double start = 0, double end = 8, bool updateCamera = true) { AnimateShengjianggan(start / 8, end / 8, updateCamera); }
+
+    /// （车）左侧板天线水平旋转动画。0表示默认位置，90表示向外侧旋转90度位置
+    void AnimateZuobanHorizontalD(double start = 0, double end = 90, bool updateCamera = false) { AnimateZuobanHorizontal(start / 90, end / 90, updateCamera); }
+
+    /// （车）左侧板天线垂直旋转动画。0表示默认位置，-45表示上仰45度位置，45表示下俯45度位置
+    void AnimateZuobanVerticalD(double start, double end, bool updateCamera = false) { AnimateZuobanVertical(start / 90, end / 90, updateCamera); }
+
+    /// （车）右侧板天线水平旋转动画。0表示默认位置，90表示向外侧旋转90度位置
+    void AnimateYoubanHorizontalD(double start = 0, double end = 90, bool updateCamera = false) { AnimateYoubanHorizontal(start / 90, end / 90, updateCamera); }
+
+    /// （车）右侧板天线垂直旋转动画。0表示默认位置，-45表示上仰45度位置，45表示下俯45度位置
+    void AnimateYoubanVerticalD(double start, double end, bool updateCamera = false) { AnimateYoubanVertical(start / 90, end / 90, updateCamera); }
+
+    ///
+    void MoveZuodaofuTo(double goal, bool updateCamera = true) { AnimateZuodaofu(_zuodaofu, goal, updateCamera); }
+
+    void MoveYoudaofuTo(double goal, bool updateCamera = true) { AnimateYoudaofu(_youdaofu, goal, updateCamera); }
+
+    void MoveDaofuTo(double goal, bool updateCamera = true) { AnimateDaofu(_daofu, goal, updateCamera); }
+
+    void MoveBiantianxianTo(double goal, bool updateCamera = true) { AnimateBiantianxian(_biantianxian, goal, updateCamera); }
+
+    void MoveShengjiangganTo(double goal, bool updateCamera = true) { AnimateShengjianggan(_shengjianggan, goal, updateCamera); }
+
+    void MoveZuobanVerticalTo(double goal, bool updateCamera = false) { AnimateZuobanVertical(_zuobanVertical, goal, updateCamera); }
+
+    void MoveZuobanHorizontalTo(double goal, bool updateCamera = false) { AnimateZuobanHorizontal(_zuobanHorizontal, goal, updateCamera); }
+
+    void MoveYoubanVerticalTo(double goal, bool updateCamera = false) { AnimateYoubanVertical(_youbanVertical, goal, updateCamera); }
+
+    void MoveYoubanHorizontalTo(double goal, bool updateCamera = false) { AnimateYoubanHorizontal(_youbanHorizontal, goal, updateCamera); }
+
+
+    void MoveZuodaofu(double offset, bool updateCamera = true) { MoveZuodaofuTo(_zuodaofu + offset, updateCamera); }
+
+    void MoveYoudaofu(double offset, bool updateCamera = true) { MoveYoudaofuTo(_youdaofu + offset, updateCamera); }
+
+    void MoveDaofu(double offset, bool updateCamera = true) { MoveDaofuTo(_daofu + offset, updateCamera); }
+
+    void MoveBiantianxian(double offset, bool updateCamera = true) { MoveBiantianxianTo(_biantianxian + offset, updateCamera); }
+
+    void MoveShengjianggan(double offset, bool updateCamera = true) { MoveShengjiangganTo(_shengjianggan + offset, updateCamera); }
+
+    void MoveZuobanVertical(double offset, bool updateCamera = false) { MoveZuobanVerticalTo(_zuobanVertical + offset, updateCamera); }
+
+    void MoveZuobanHorizontal(double offset, bool updateCamera = false) { MoveZuobanHorizontalTo(_zuobanHorizontal + offset, updateCamera); }
+
+    void MoveYoubanVertical(double offset, bool updateCamera = false) { MoveYoubanVerticalTo(_youbanVertical + offset, updateCamera); }
+
+    void MoveYoubanHorizontal(double offset, bool updateCamera = false) { MoveYoubanHorizontalTo(_youbanHorizontal + offset, updateCamera); }
+
+    ///
+    void MoveZuodaofuD(double offset, bool updateCamera = true) { MoveZuodaofu(offset / 90, updateCamera); }
+
+    void MoveYoudaofuD(double offset, bool updateCamera = true) { MoveYoudaofu(offset / 90, updateCamera); }
+
+    void MoveDaofuD(double offset, bool updateCamera = true) { MoveDaofu(offset / 90, updateCamera); }
+
+    void MoveBiantianxianD(double offset, bool updateCamera = true) { MoveBiantianxian(offset / 90, updateCamera); }
+
+    void MoveShengjiangganM(double offset, bool updateCamera = true) { MoveShengjianggan(offset / 8, updateCamera); }
+
+    void MoveZuobanVerticalD(double offset, bool updateCamera = false) { MoveZuobanVertical(offset / 90, updateCamera); }
+
+    void MoveZuobanHorizontalD(double offset, bool updateCamera = false) { MoveZuobanHorizontal(offset / 90, updateCamera); }
+
+    void MoveYoubanVerticalD(double offset, bool updateCamera = false) { MoveYoubanVertical(offset / 90, updateCamera); }
+
+    void MoveYoubanHorizontalD(double offset, bool updateCamera = false) { MoveYoubanHorizontal(offset / 90, updateCamera); }
+
+    ///
+    void MoveZuodaofuToD(double goal, bool updateCamera = true) { MoveZuodaofuTo(goal / 90, updateCamera); }
+
+    void MoveYoudaofuToD(double goal, bool updateCamera = true) { MoveYoudaofuTo(goal / 90, updateCamera); }
+
+    void MoveDaofuToD(double goal, bool updateCamera = true) { MoveDaofuTo(goal / 90, updateCamera); }
+
+    void MoveBiantianxianToD(double goal, bool updateCamera = true) { MoveBiantianxianTo(goal / 90, updateCamera); }
+
+    void MoveShengjiangganToM(double goal, bool updateCamera = true) { MoveShengjiangganTo(goal / 8, updateCamera); }
+
+    void MoveZuobanVerticalToD(double goal, bool updateCamera = false) { MoveZuobanVerticalTo(goal / 90, updateCamera); }
+
+    void MoveZuobanHorizontalToD(double goal, bool updateCamera = false) { MoveZuobanHorizontalTo(goal / 90, updateCamera); }
+
+    void MoveYoubanVerticalToD(double goal, bool updateCamera = false) { MoveYoubanVerticalTo(goal / 90, updateCamera); }
+
+    void MoveYoubanHorizontalToD(double goal, bool updateCamera = false) { MoveYoubanHorizontalTo(goal / 90, updateCamera); }
 
     ////// 摄像机相关方法
     /// 保存当前摄像机位置和角度
@@ -237,6 +403,22 @@ private:
     double _occulusionRatio;
     std::vector<std::string> _cameraNames;
     std::map<std::string, CameraInfo> _cameras;
+
+    double _opacity;
+    double _moduleAnimationSpeed;
+
+    /// current module states
+    double _zuodaofu;
+    double _youdaofu;
+    double _daofu;
+    double _biantianxian;
+    double _shengjianggan;
+    double _zuobanVertical;
+    double _zuobanHorizontal;
+    double _youbanVertical;
+    double _youbanHorizontal;
+
+    std::map<std::string, bool> _resetCameraInAnimation;
 };
 
 #endif // SCENEWIDGET_H

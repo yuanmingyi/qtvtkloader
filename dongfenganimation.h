@@ -21,6 +21,25 @@ public:
     }
 
     ///
+    /// \brief GetTime: Get the animation time
+    /// \return time: in seconds
+    ///
+    double GetTime() const { return _time; }
+
+    ///
+    /// \brief SetTime: Set the animation time
+    /// \param time: in seconds
+    ///
+    void SetTime(double time) { _time = time; _speed = 0; SetEndTime(time); }
+
+    ///
+    /// \brief SetAnimationSpeed set the rate of change for the value of the key frame.
+    /// Must be called before Add any update function
+    /// \param speed: the rate of change for the value of the key frame
+    ///
+    void SetAnimationSpeed(double speed) { _speed = speed; _time = 0; }
+
+    ///
     /// \brief Add a udpate method to invoke with the calculated linear value at each animation frame
     /// \param updateStateFunc: the method with a double parameter to add
     /// \param startValue: initial value at the start of the animation
@@ -34,7 +53,7 @@ public:
     /// \brief set the render method to update the window at each animation frame
     /// \param method: the function to call at each animation frame
     ///
-    void SetRenderMethod(std::function<void()> method) { _sceneObserver->SetRenderMethod(method); }
+    void SetRenderMethod(std::function<void(const std::string&)> method, const std::string& ctx = "") { _sceneObserver->SetRenderMethod(method, ctx); }
 
 protected:
     DongfengAnimation();
@@ -42,6 +61,8 @@ protected:
 
 private:
     vtkSmartPointer<AnimationSceneObserver> _sceneObserver;
+    double _time;
+    double _speed;
 };
 
 #endif // ANIMATION_H

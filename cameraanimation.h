@@ -32,7 +32,7 @@ public:
     /// \param end: the end position and pose information of the camera
     /// \param time: animation lasting time (in second)
     ///
-    void Play(std::function<void()> renderMethod, vtkRenderer* renderer, const CameraInfo& start, const CameraInfo& end, double time = 1);
+    void Play(std::function<void(const std::string&)> renderMethod, vtkRenderer* renderer, const CameraInfo& start, const CameraInfo& end, double speed = 1);
 
 protected:
     CameraAnimation();

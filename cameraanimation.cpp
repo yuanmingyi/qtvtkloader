@@ -1,6 +1,16 @@
 #include "cameraanimation.h"
 #include <vtkCamera.h>
+#include <vtkMath.h>
 #include <string>
+
+double CalcLongestTime(const CameraInfo& start, const CameraInfo& end, double speed)
+{
+    double radDiff = 0.5 * fabs(start.ViewAngle - end.ViewAngle) / vtkMath::Pi();
+    double maxDist = vtkMath::Distance2BetweenPoints(start.Position, end.Position);
+    maxDist = vtkMath::Max(maxDist, vtkMath::Distance2BetweenPoints(start.FocalPoint, end.FocalPoint));
+    maxDist = vtkMath::Max(0.001 * sqrt(maxDist), radDiff);
+    return maxDist / speed;
+}
 
 void Print3d(std::string hint, double* value)
 {
@@ -22,7 +32,7 @@ CameraAnimation::CameraAnimation()
     AddObserver(vtkCommand::EndAnimationCueEvent, _sceneObserver);
 }
 
-void CameraAnimation::Play(std::function<void()> renderMethod, vtkRenderer* renderer, const CameraInfo& start, const CameraInfo& end, double time)
+void CameraAnimation::Play(std::function<void(const std::string&)> renderMethod, vtkRenderer* renderer, const CameraInfo& start, const CameraInfo& end, double speed)
 {
     _sceneObserver->SetRenderMethod(renderMethod);
     vtkNew<CameraAnimationCue> cue;
@@ -33,6 +43,7 @@ void CameraAnimation::Play(std::function<void()> renderMethod, vtkRenderer* rend
     SetLoop(false);
     SetFrameRate(5);
     SetStartTime(0);
+    double time = CalcLongestTime(start, end, speed);
     SetEndTime(time);
     vtkAnimationScene::Play();
     Stop();

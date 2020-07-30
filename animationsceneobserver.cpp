@@ -3,6 +3,7 @@
 AnimationSceneObserver::AnimationSceneObserver()
 {
     _renderMethod = nullptr;
+    _ctx = "";
 }
 
 AnimationSceneObserver::~AnimationSceneObserver()
@@ -21,13 +22,13 @@ void AnimationSceneObserver::Execute(vtkObject* vtkNotUsed(caller), unsigned lon
         case vtkCommand::AnimationCueTickEvent:
             std::cout << "[AnimationCueTickEvent] render the window" << std::endl;
             if (_renderMethod) {
-                _renderMethod();
+                _renderMethod(_ctx);
             }
             break;
         case vtkCommand::EndAnimationCueEvent:
             std::cout << "[EndAnimationCueEvent] render the window" << std::endl;
             if (_renderMethod) {
-                _renderMethod();
+                _renderMethod(_ctx);
             }
             break;
         }

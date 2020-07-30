@@ -11,7 +11,7 @@ class AnimationSceneObserver : public vtkCommand
 public:
     static AnimationSceneObserver* New();
 
-    void SetRenderMethod(std::function<void()> renderMethod) { _renderMethod = renderMethod; }
+    void SetRenderMethod(std::function<void(const std::string&)> renderMethod, const std::string& ctx = "") { _renderMethod = renderMethod; _ctx = ctx; }
     virtual void Execute(vtkObject* caller, unsigned long event, void* calldata);
 
 protected:
@@ -19,7 +19,8 @@ protected:
     ~AnimationSceneObserver();
 
 private:
-    std::function<void()> _renderMethod;
+    std::function<void(const std::string&)> _renderMethod;
+    std::string _ctx;
 };
 
 
