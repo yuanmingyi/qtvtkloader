@@ -1,6 +1,15 @@
 #ifndef SCENEWIDGET_H
 #define SCENEWIDGET_H
 
+#ifdef WIN32
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "Advapi32.lib")
+#pragma comment(lib, "glu32.lib")
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "dbghelp.lib")
+#endif
+
 #include <QObject>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
@@ -8,6 +17,11 @@
 #include "dongfengvis.h"
 #include "cameraanimation.h"
 
+/*!
+ * \brief The SceneWidget class
+ * 将QT窗口提升为SceneWidget，使用ImportObj加载模型文件，然后通过成员函数控制模型的显示和动画
+ * \remark 需要在Main.cpp中增加以下语句：QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
+ */
 class SceneWidget : public QVTKOpenGLNativeWidget
 {
     Q_OBJECT
@@ -17,29 +31,46 @@ public:
     explicit SceneWidget(QWidget *parent = nullptr);
     ~SceneWidget();
 
-    /// 从文件中导入模型
-    /// fileName: 模型文件名(.obj)
-    /// loadTexture: true同时导入贴图文件，false不导入贴图文件（贴图文件为jpg或者png在纹理文件(.mtl)中指定，必须放在模型文件同一目录下
+    /*!
+     * \fn void SceneWidget::ImportObj(const std::string& fileName, bool loadTexture = false)
+     * \brief 从文件中导入模型
+     * \param fileName: 模型文件名(.obj)
+     * \param loadTexture: \c true同时导入贴图文件，\c false不导入贴图文件（贴图文件为jpg或者png在纹理文件(.mtl)中指定，必须放在模型文件同一目录下
+    */
     void ImportObj(const std::string& fileName, bool loadTexture = false);
 
-    /// 获取所有可选部件名称
-    /// 返回：可选部件名称列表，可选部件名称可以作为参数用于PickModule和AnimateHighlight方法的参数来将模型中相应部件高亮显示
+    /*!
+     * \fn const std::vector<std::string>& SceneWidget::GetPickableItems() const
+     * \brief 获取所有可选部件名称
+     * \return 返回可选部件名称列表，可选部件名称可以作为参数用于PickModule和AnimateHighlight方法的参数来将模型中相应部件高亮显示
+     */
     const std::vector<std::string>& GetPickableItems() const { return _dongfeng->GetModuleNames(); }
 
-    /// 模型是否已经加载
-    /// 返回: true表示模型已完全加载。false表示模型没有成功加载
+    /*!
+     * \fn bool SceneWidget::IsImported() const
+     * \brief 模型是否已经加载
+     * \return 返回 \c true 表示模型已完全加载。\c false 表示模型没有成功加载
+     */
     bool IsImported() const { return _isFullImported; }
 
-    /// 设置模型的透明度
-    /// opacity: 范围0-1，0表示完全透明，1表示完全不透明，只对没有高亮和动画效果的部件进行设置
+    /*!
+     * \fn void SceneWidget::SetOpacity(double opacity)
+     * \brief 设置模型的透明度
+     * \param opacity: 范围0-1，0表示完全透明，1表示完全不透明，只对没有高亮和动画效果的部件进行设置
+     */
     void SetOpacity(double opacity);
 
-    /// 选取指定名称的部件，使用设置的高亮颜色渲染该部件
-    /// moduleName: 要选取的部件名称，参考GetPickableItems()
+    /*!
+     * \fn void SceneWidget::PickModule(const std::string& moduleName)
+     * \brief 选取指定名称的部件，使用设置的高亮颜色渲染该部件
+     * \param moduleName: 要选取的部件名称，参考GetPickableItems()
+     */
     void PickModule(const std::string& moduleName);
 
-    /// 设置光强度，对场景中所有物体有效
-    /// intensity: 光强度，0时光线最弱，数值越大光线约亮
+    /*! \fn void SceneWidget::SetLightIntensity(double intensity)
+     * \brief 设置光强度，对场景中所有物体有效
+     * \param intensity: 光强度，0时光线最弱，数值越大光线约亮
+     */
     void SetLightIntensity(double intensity);
 
     /// 显示/隐藏坐标轴

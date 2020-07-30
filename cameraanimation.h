@@ -24,6 +24,14 @@ public:
         return new CameraAnimation();
     }
 
+    ///
+    /// \brief Play: setup the animation and play at once
+    /// \param renderMethod: render method for updating the animation frames
+    /// \param renderer: the render which controls the camera
+    /// \param start: the start position and pose information of the camera
+    /// \param end: the end position and pose information of the camera
+    /// \param time: animation lasting time (in second)
+    ///
     void Play(std::function<void()> renderMethod, vtkRenderer* renderer, const CameraInfo& start, const CameraInfo& end, double time = 1);
 
 protected:
