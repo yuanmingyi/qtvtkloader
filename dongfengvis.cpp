@@ -67,6 +67,9 @@ DongfengVis::DongfengVis()
     _renderMethod = nullptr;
     _opacity = 1.0;
     _speed = 1.0;
+    std::vector<std::string> modules = {
+        DongfengVis::Dipan, DongfengVis::Zuojigui, DongfengVis::Youjigui1, DongfengVis::Youjigui2, DongfengVis::Youjigui3 };
+    SetInsideModules(modules);
     _color[0] = 1.0;
     _color[1] = 1.0;
     _color[2] = 1.0;
@@ -78,13 +81,17 @@ DongfengVis::~DongfengVis()
     delete _objImporter;
 }
 
+void DongfengVis::SetInsideModules(const std::vector<std::string> &modules)
+{
+    _insideModules.clear();
+    for(auto module = modules.begin(); module != modules.end(); module++) {
+        _insideModules.insert(*module);
+    }
+}
+
 bool DongfengVis::IsInsideModule(const std::string& name) const
 {
-    return name == DongfengVis::Dipan
-            || name == DongfengVis::Zuojigui
-            || name == DongfengVis::Youjigui1
-            || name == DongfengVis::Youjigui2
-            || name == DongfengVis::Youjigui3;
+    return _insideModules.find(name) != _insideModules.end();
 }
 
 void DongfengVis::SetOpacity(double opacity)
@@ -110,21 +117,13 @@ void DongfengVis::SetColor(double r, double g, double b)
     }
 }
 
-void DongfengVis::ImportObj(const std::string& filename, vtkRenderer* renderer, bool loadTexture)
+void DongfengVis::ImportObj(const std::string& filename, bool loadTexture)
 {
     // remmove old actors
     auto configFile = vtksys::SystemTools::GetFilenamePath(filename) + "/" + vtksys::SystemTools::GetFilenameWithoutLastExtension(filename) + ".txt";
     std::cout << "config file path: " << configFile << std::endl;
-    auto root = _objImporter->GetRootObject();
-    if (root && renderer) {
-        renderer->RemoveViewProp(root);
-    }
     _objImporter->Import(filename.data(), configFile.data(), loadTexture);
     SaveActorProperties();
-    root = _objImporter->GetRootObject();
-    if (root && renderer) {
-        renderer->AddViewProp(root);
-    }
 }
 
 void DongfengVis::AnimateZuodaofu(double start, double end)

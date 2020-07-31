@@ -21,6 +21,14 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+signals:
+    void lightValueChanged(double);
+    void opacityValueChanged(double);
+    void opacity1ValueChanged(double);
+    void cameraAnimationSpeedValueChanged(double);
+    void moduleAnimationSpeedValueChanged(double);
+    void highlightAnimationTimeValueChanged(double);
+
 public slots:
     //! Show the 'About this application' dialog
     void showAboutDialog();
@@ -30,13 +38,14 @@ public slots:
 
     void addCamera();
     void currentCameraChanged(QString);
-
     void currentModuleChanged(QString);
-    void currentModuleChanged(std::string);
+
     void lightSliderValueChanged(int);
-    void lightIntensityChanged(QString);
     void opacitySliderValueChanged(int);
-    void opacityEditTextChanged(QString);
+    void opacity1SliderValueChanged(int);
+    void cameraAnimationSpeedSliderValueChanged(int);
+    void moduleAnimationSpeedSliderValueChanged(int);
+    void highlightAnimationTimeSliderValueChanged(int);
 
     void showAxesChanged();
     void animateHighlightChanged();
@@ -54,6 +63,8 @@ public slots:
     void setBackgroundColor();
     void setHighlightColor();
 
+    void fileOpened(bool, QString, bool);
+
 protected:
     //! Open a file
     /*!
@@ -68,10 +79,6 @@ private:
     Ui::MainWindow *ui;
     QComboBox* actorsComboBox;
     QComboBox* camerasComboBox;
-    QSlider* lightIntensitySlider;
-    QLineEdit* lightIntensityEdit;
-    QSlider* opacitySlider;
-    QLineEdit* opacityEdit;
     QLabel* statusLabel;
     QString camerasFilePath;
 
@@ -99,6 +106,10 @@ private:
     void AddActorComboBox();
     void AddLightIntensityControl();
     void AddOpacityControl();
+    void AddOpacity1Control();
+    void AddCameraAnimationSpeedControl();
+    void AddModuleAnimationSpeedControl();
+    void AddHighlightAnimationTimeControl();
     void AddStatusbarLabel();
     void AddPushButtons();
     void AddCamerasComboBox();

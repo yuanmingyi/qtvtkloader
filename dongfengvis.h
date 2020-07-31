@@ -69,7 +69,7 @@ public:
     ~DongfengVis();
 
     // load obj data from file
-    void ImportObj(const std::string& fileName, vtkRenderer* renderer, bool loadTexture = true);
+    void ImportObj(const std::string& fileName, bool loadTexture = true);
 
     // predefine animations
     void AnimateZuodaofu(double start = 0, double end = 1);
@@ -133,6 +133,10 @@ public:
     double GetAnimationSpeed() const { return _speed; }
     void SetAnimationSpeed(double speed) { _speed = speed; }
 
+    vtkAssembly* GetRoot() const { return _objImporter->GetRootObject(); }
+
+    void SetInsideModules(const std::vector<std::string>& modules);
+
 private:
     ObjImporter *_objImporter;
     std::map<vtkActor*, vtkSmartPointer<vtkProperty>> _properties;
@@ -140,6 +144,7 @@ private:
     std::map<vtkActor*, vtkTexture*> _textures;
     std::map<std::string, bool> _highlightFlags;
     std::vector<std::string> _moduleNames;
+    std::set<std::string> _insideModules;
     std::function<void(const std::string&)> _renderMethod;
     double _opacity;
     double _color[3];

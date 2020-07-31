@@ -13,8 +13,12 @@
 #include <QComboBox>
 #include <QColor>
 #include <QColorDialog>
+#include <QGroupBox>
 #include <float.h>
 
+/***
+ * 摄像机状态文件保存在运行目录下的cameras.txt，可以用此demo保存几个合适的摄像机状态，然后将cameras.txt拷贝到别的项目中使用
+ * */
 static std::string camerasFilePath = "./cameras.txt";
 static size_t cameraIndex = 0;
 
@@ -43,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionLoad_Texture, SIGNAL(triggered()), this, SLOT(loadTextureChanged()));
     QObject::connect(ui->actionPick_with_Animation, SIGNAL(triggered()), this, SLOT(animateHighlightChanged()));
     QObject::connect(ui->actionSaveCamera, SIGNAL(triggered()), this, SLOT(addCamera()));
+    QObject::connect(ui->sceneWidget, SIGNAL(importComplete(bool, QString, bool)), this, SLOT(fileOpened(bool, QString, bool)));
 
     InitProperties();
     AddStatusbarLabel();
@@ -50,6 +55,10 @@ MainWindow::MainWindow(QWidget *parent) :
     AddActorComboBox();
     AddLightIntensityControl();
     AddOpacityControl();
+    AddOpacity1Control();
+    AddCameraAnimationSpeedControl();
+    AddModuleAnimationSpeedControl();
+    AddHighlightAnimationTimeControl();
     AddPushButtons();
 }
 
@@ -57,10 +66,6 @@ MainWindow::~MainWindow()
 {
     delete camerasComboBox;
     delete actorsComboBox;
-    delete lightIntensitySlider;
-    delete lightIntensityEdit;
-    delete opacitySlider;
-    delete opacityEdit;
     delete statusLabel;
     delete animateDaofuButton;
     delete animateBiantianxianButton;
@@ -81,6 +86,9 @@ void MainWindow::InitProperties()
     isAnimatePick = false;
 }
 
+/***
+ * 状态栏
+ * */
 void MainWindow::AddStatusbarLabel()
 {
     statusLabel = new QLabel;
@@ -88,89 +96,204 @@ void MainWindow::AddStatusbarLabel()
     ui->statusbar->addWidget(statusLabel);
 }
 
+/***
+ * 摄像机选项下拉框
+ * 选择保存的摄像机位置，场景会切换到相应的位置和角度
+ * 摄像机位置选项通过SceneWidget::LoadCameras方法从文件中读取
+ * */
 void MainWindow::AddCamerasComboBox()
 {
-    auto label = new QLabel;
-    label->setText(tr("cameras:"));
-    label->setMargin(5);
-    ui->toolBar->addWidget(label);
+    auto group = new QGroupBox(tr("Cameras"));
+    ui->toolBar->addWidget(group);
 
     camerasComboBox = new QComboBox;
-    camerasComboBox->setStyleSheet("color:black;background-color:white;margin:10");
-    ui->toolBar->addWidget(camerasComboBox);
+    camerasComboBox->setStyleSheet("color:black;background-color:white;padding:2 10");
+
+    auto layout = new QVBoxLayout;
+    layout->addWidget(camerasComboBox);
+    group->setLayout(layout);
 
     QObject::connect(camerasComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(currentCameraChanged(QString)));
 }
 
+/***
+ * 部件选择下拉框
+ * 通过选择不同选项可以高亮（包括以动画方式）相应的部件
+ * */
 void MainWindow::AddActorComboBox()
 {
-    auto label = new QLabel;
-    label->setText(tr("highlight:"));
-    label->setMargin(5);
-    ui->toolBar->addWidget(label);
+    auto group = new QGroupBox(tr("Highlight"));
+    ui->toolBar->addWidget(group);
 
     actorsComboBox = new QComboBox;
-    actorsComboBox->setStyleSheet("color:black;background-color:white;margin:10");
-    ui->toolBar->addWidget(actorsComboBox);
+    actorsComboBox->setStyleSheet("color:black;background-color:white;padding:2 10");
+
+    auto layout = new QVBoxLayout;
+    layout->addWidget(actorsComboBox);
+    group->setLayout(layout);
 
     QObject::connect(actorsComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(currentModuleChanged(QString)));
-    QObject::connect(ui->sceneWidget, SIGNAL(pickedModuleChanged(std::string)), this, SLOT(currentModuleChanged(std::string)));
 }
 
+/***
+ * 亮度控制滑动条
+ * 用来控制场景的光照强度
+ * */
 void MainWindow::AddLightIntensityControl()
 {
-    auto validator = new QDoubleValidator;
-    validator->setRange(0.1, 10);
+    auto group = new QGroupBox(tr("Light Intensity"));
+    ui->toolBar->addWidget(group);
+    auto layout = new QVBoxLayout;
+    group->setLayout(layout);
+
+    auto slider = new QSlider(Qt::Horizontal);
+    slider->setMaximum(100);
+    slider->setMinimum(1);
+    layout->addWidget(slider);
 
     auto label = new QLabel;
-    label->setText(tr("light:"));
     label->setMargin(5);
-    ui->toolBar->addWidget(label);
+    layout->addWidget(label);
 
-    lightIntensitySlider = new QSlider(Qt::Horizontal);
-    lightIntensitySlider->setFixedWidth(100);
-    lightIntensitySlider->setMaximum(100);
-    lightIntensitySlider->setMinimum(1);
-    lightIntensitySlider->setValue(10);
-    ui->toolBar->addWidget(lightIntensitySlider);
+    QObject::connect(slider, SIGNAL(valueChanged(int)), this, SLOT(lightSliderValueChanged(int)));
+    QObject::connect(this, SIGNAL(lightValueChanged(double)), label, SLOT(setNum(double)));
 
-    lightIntensityEdit = new QLineEdit();
-    lightIntensityEdit->setValidator(validator);
-    lightIntensityEdit->setText(QString::number(sliderValueToIntensity(lightIntensitySlider->value(), 10.0)));
-    ui->toolBar->addWidget(lightIntensityEdit);
-
-    QObject::connect(lightIntensitySlider, SIGNAL(valueChanged(int)), this, SLOT(lightSliderValueChanged(int)));
-    QObject::connect(lightIntensityEdit, SIGNAL(textChanged(QString)), this, SLOT(lightIntensityChanged(QString)));
+    slider->setValue(10);
 }
 
+/***
+ * 透明度控制滑动条
+ * 用来控制物体的透明度
+ * */
 void MainWindow::AddOpacityControl()
 {
-    auto validator = new QDoubleValidator;
-    validator->setRange(0, 1);
+    auto group = new QGroupBox(tr("Opacity"));
+    ui->toolBar->addWidget(group);
+    auto layout = new QVBoxLayout;
+    group->setLayout(layout);
+
+    auto slider = new QSlider(Qt::Horizontal);
+    slider->setMaximum(100);
+    slider->setMinimum(0);
+    layout->addWidget(slider);
 
     auto label = new QLabel;
-    label->setText(tr("opacity:"));
     label->setMargin(5);
-    ui->toolBar->addWidget(label);
+    layout->addWidget(label);
 
-    opacitySlider = new QSlider(Qt::Horizontal);
-    opacitySlider->setFixedWidth(100);
-    opacitySlider->setMaximum(100);
-    opacitySlider->setMinimum(0);
-    opacitySlider->setValue(100);
-    ui->toolBar->addWidget(opacitySlider);
+    QObject::connect(slider, SIGNAL(valueChanged(int)), this, SLOT(opacitySliderValueChanged(int)));
+    QObject::connect(this, SIGNAL(opacityValueChanged(double)), label, SLOT(setNum(double)));
 
-    auto value = sliderValueToIntensity(opacitySlider->value(), 100.0);
-    opacityEdit = new QLineEdit();
-    opacityEdit->setValidator(validator);
-    opacityEdit->setText(QString::number(value));
-    ui->toolBar->addWidget(opacityEdit);
-    ui->sceneWidget->SetOpacity(value);
-
-    QObject::connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(opacitySliderValueChanged(int)));
-    QObject::connect(opacityEdit, SIGNAL(textChanged(QString)), this, SLOT(opacityEditTextChanged(QString)));
+    slider->setValue(100);
 }
 
+/***
+ * 透明度控制滑动条
+ * 用来控制高亮内部部件时，外部部件的透明度
+ * */
+void MainWindow::AddOpacity1Control()
+{
+    auto group = new QGroupBox(tr("Opacity1"));
+    ui->toolBar->addWidget(group);
+    auto layout = new QVBoxLayout;
+    group->setLayout(layout);
+
+    auto slider = new QSlider(Qt::Horizontal);
+    slider->setMaximum(100);
+    slider->setMinimum(0);
+    layout->addWidget(slider);
+
+    auto label = new QLabel;
+    label->setMargin(5);
+    layout->addWidget(label);
+
+    QObject::connect(slider, SIGNAL(valueChanged(int)), this, SLOT(opacity1SliderValueChanged(int)));
+    QObject::connect(this, SIGNAL(opacity1ValueChanged(double)), label, SLOT(setNum(double)));
+
+    slider->setValue(100);
+}
+
+/***
+ * 相机动画速度控制滑动条
+ * 用来控制相机动画的播放速度
+ * */
+void MainWindow::AddCameraAnimationSpeedControl()
+{
+    auto group = new QGroupBox(tr("Camera Speed"));
+    ui->toolBar->addWidget(group);
+    auto layout = new QVBoxLayout;
+    group->setLayout(layout);
+
+    auto slider = new QSlider(Qt::Horizontal);
+    slider->setMaximum(100);
+    slider->setMinimum(1);
+    layout->addWidget(slider);
+
+    auto label = new QLabel;
+    label->setMargin(5);
+    layout->addWidget(label);
+
+    QObject::connect(slider, SIGNAL(valueChanged(int)), this, SLOT(cameraAnimationSpeedSliderValueChanged(int)));
+    QObject::connect(this, SIGNAL(cameraAnimationSpeedValueChanged(double)), label, SLOT(setNum(double)));
+
+    slider->setValue(10);
+}
+
+/***
+ * 部件动画速度控制滑动条
+ * 用来控制部件动画的移动速度
+ * */
+void MainWindow::AddModuleAnimationSpeedControl()
+{
+    auto group = new QGroupBox(tr("Animation Speed"));
+    ui->toolBar->addWidget(group);
+    auto layout = new QVBoxLayout;
+    group->setLayout(layout);
+
+    auto slider = new QSlider(Qt::Horizontal);
+    slider->setMaximum(100);
+    slider->setMinimum(1);
+    layout->addWidget(slider);
+
+    auto label = new QLabel;
+    label->setMargin(5);
+    layout->addWidget(label);
+
+    QObject::connect(slider, SIGNAL(valueChanged(int)), this, SLOT(moduleAnimationSpeedSliderValueChanged(int)));
+    QObject::connect(this, SIGNAL(moduleAnimationSpeedValueChanged(double)), label, SLOT(setNum(double)));
+
+    slider->setValue(10);
+}
+
+/***
+ * 高亮动画时间控制滑动条
+ * 用来控制高亮动画播放时间
+ * */
+void MainWindow::AddHighlightAnimationTimeControl()
+{
+    auto group = new QGroupBox(tr("Highlight Time"));
+    ui->toolBar->addWidget(group);
+    auto layout = new QVBoxLayout;
+    group->setLayout(layout);
+
+    auto slider = new QSlider(Qt::Horizontal);
+    slider->setMaximum(100);
+    slider->setMinimum(1);
+    layout->addWidget(slider);
+
+    auto label = new QLabel;
+    label->setMargin(5);
+    layout->addWidget(label);
+
+    QObject::connect(slider, SIGNAL(valueChanged(int)), this, SLOT(highlightAnimationTimeSliderValueChanged(int)));
+    QObject::connect(this, SIGNAL(highlightAnimationTimeValueChanged(double)), label, SLOT(setNum(double)));
+
+    slider->setValue(10);
+}
+
+/***
+ * 设置功能按键，包括各部件的动画按钮，以及颜色设置按钮
+ * */
 void MainWindow::AddPushButtons()
 {
     animateDaofuButton = new QPushButton(tr("daofu"));
@@ -184,6 +307,17 @@ void MainWindow::AddPushButtons()
     setHighlightColorButton = new QPushButton(QIcon(QPixmap(40, 40)), tr("picked"));
     setBackgroundColorButton = new QPushButton(QIcon(QPixmap(40, 40)), tr("bkg"));
 
+    animateDaofuButton->setStyleSheet("padding:10;margin:5");
+    animateBiantianxianButton->setStyleSheet("padding:10;margin:5");
+    animateShengjiangganButton->setStyleSheet("padding:10;margin:5");
+    animateYoubanVerticalButton->setStyleSheet("padding:10;margin:5");
+    animateZuobanVerticalButton->setStyleSheet("padding:10;margin:5");
+    animateYoubanHorizontalButton->setStyleSheet("padding:10;margin:5");
+    animateZuobanHorizontalButton->setStyleSheet("padding:10;margin:5");
+    setModelColorButton->setStyleSheet("padding:10;margin:5");
+    setHighlightColorButton->setStyleSheet("padding:10;margin:5");
+    setBackgroundColorButton->setStyleSheet("padding:10;margin:5");
+
     ui->toolBar->addWidget(animateDaofuButton);
     ui->toolBar->addWidget(animateBiantianxianButton);
     ui->toolBar->addWidget(animateShengjiangganButton);
@@ -194,7 +328,6 @@ void MainWindow::AddPushButtons()
     ui->toolBar->addWidget(setModelColorButton);
     ui->toolBar->addWidget(setHighlightColorButton);
     ui->toolBar->addWidget(setBackgroundColorButton);
-
 
     setModelColorButton->setEnabled(false);
     animateDaofuButton->setEnabled(false);
@@ -231,6 +364,10 @@ void MainWindow::showOpenFileDialog()
     }
 }
 
+/***
+ * 保存当前摄像机状态
+ * 保存当前场景中的摄像机位置和角度，并添加到选项下拉框中以供后续选择
+ * */
 void MainWindow::addCamera()
 {
     if (ui->sceneWidget->IsImported())
@@ -242,6 +379,10 @@ void MainWindow::addCamera()
     }
 }
 
+/***
+ * 窗口关闭事件
+ * 主窗口关闭时，保存摄像机状态到文件中
+ * */
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     // save the cameras
@@ -253,6 +394,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
+/***
+ * 用户在摄像机下拉框选择了不同的选项
+ * 恢复场景中的摄像机状态到所选状态
+ * 当动画选取部件选项勾选时，摄像机切换具有动画效果
+ * */
 void MainWindow::currentCameraChanged(QString name)
 {
     std::string stdName = name.toStdString();
@@ -260,21 +406,36 @@ void MainWindow::currentCameraChanged(QString name)
     ui->sceneWidget->RestoreCamera(stdName, isAnimatePick);
 }
 
+/***
+ * 勾选/取消勾选显示坐标轴选项
+ * */
 void MainWindow::showAxesChanged()
 {
     ui->sceneWidget->ShowAxes(ui->actionShow_Axes->isChecked());
 }
 
+/***
+ * 勾选/取消勾选动画选取部件选项
+ * */
 void MainWindow::animateHighlightChanged()
 {
     isAnimatePick = ui->actionPick_with_Animation->isChecked();
 }
 
+/***
+ * 勾选/取消勾选加载纹理贴图选项
+ * 勾选时，再次加载模型将同时加载纹理贴图，否则不加载
+ * */
 void MainWindow::loadTextureChanged()
 {
     loadTexture = ui->actionLoad_Texture->isChecked();
 }
 
+/***
+ * 用户在模型部件下拉框选择了不同的选项
+ * 以高亮显示选中的部件
+ * 当动画选取部件选项勾选时，高亮过程有动画效果
+ * */
 void MainWindow::currentModuleChanged(QString moduleName)
 {
     qDebug() << "currentActorChanged(QString): " << moduleName << endl;
@@ -285,125 +446,193 @@ void MainWindow::currentModuleChanged(QString moduleName)
     }
 }
 
-void MainWindow::currentModuleChanged(std::string name)
-{
-    qDebug() << "currentActorChanged(std::string): " << QString::fromStdString(name) << endl;
-    actorsComboBox->setCurrentText(QString::fromStdString(name));
-}
-
+/***
+ * 光照强度信号槽
+ * */
 void MainWindow::lightSliderValueChanged(int value)
 {
     qDebug() << "lightSliderValueChanged()" << endl;
     double intensity = sliderValueToIntensity(value, 10.0);
-    auto text = QString::number(intensity);
-    lightIntensityEdit->setText(text);
     ui->sceneWidget->SetLightIntensity(intensity);
+    lightValueChanged(intensity);
 }
 
-void MainWindow::lightIntensityChanged(QString text)
-{
-    qDebug() << "lightIntensityChanged()" << endl;
-    int value = intensityToSliderValue(text.toDouble(), 10.0);
-    lightIntensitySlider->setValue(value);
-}
-
+/***
+ * 透明度信号槽
+ * */
 void MainWindow::opacitySliderValueChanged(int value)
 {
     qDebug() << "opacitySliderValueChanged()" << endl;
     double opacity = sliderValueToIntensity(value, 100.0);
-    auto text = QString::number(opacity);
-    opacityEdit->setText(text);
     ui->sceneWidget->SetOpacity(opacity);
+    opacityValueChanged(opacity);
 }
 
-void MainWindow::opacityEditTextChanged(QString text)
+/***
+ * 高亮内部部件透明度信号槽
+ * */
+void MainWindow::opacity1SliderValueChanged(int value)
 {
-    qDebug() << "opacityEditTextChanged()" << endl;
-    int value = intensityToSliderValue(text.toDouble(), 100.0);
-    opacitySlider->setValue(value);
+    qDebug() << "opacity1SliderValueChanged()" << endl;
+    double opacity = sliderValueToIntensity(value, 100.0);
+    ui->sceneWidget->InsideSelectedOpacity = opacity;
+    opacity1ValueChanged(opacity);
 }
 
+/***
+ * 相机动画速度信号槽
+ * */
+void MainWindow::cameraAnimationSpeedSliderValueChanged(int value)
+{
+    qDebug() << "cameraAnimationSpeedSliderValueChanged()" << endl;
+    double speed = sliderValueToIntensity(value, 10.0);
+    ui->sceneWidget->CameraAnimationSpeed = speed;
+    cameraAnimationSpeedValueChanged(speed);
+}
+
+/***
+ * 部件动画速度信号槽
+ * */
+void MainWindow::moduleAnimationSpeedSliderValueChanged(int value)
+{
+    qDebug() << "moduleAnimationSpeedSliderValueChanged()" << endl;
+    double speed = sliderValueToIntensity(value, 10.0);
+    ui->sceneWidget->SetModuleAnimationSpeed(speed);
+    moduleAnimationSpeedValueChanged(speed);
+}
+
+/***
+ * 高亮动画时间信号槽
+ * */
+void MainWindow::highlightAnimationTimeSliderValueChanged(int value)
+{
+    qDebug() << "highlightAnimationTimeSliderValueChanged()" << endl;
+    double time = sliderValueToIntensity(value, 10.0);
+    ui->sceneWidget->HighlightAnimationTime = time;
+    highlightAnimationTimeValueChanged(time);
+}
+
+/***
+ * 倒伏动画
+ * */
 void MainWindow::animateDaofu()
 {
     isDaofuOpen = !isDaofuOpen;
     ui->sceneWidget->AnimateDaofu(isDaofuOpen);
 }
 
+/***
+ * 鞭天线动画
+ * */
 void MainWindow::animateBiantianxian()
 {
     isBiantianxianOpen = !isBiantianxianOpen;
     ui->sceneWidget->AnimateBiantianxian(isBiantianxianOpen);
 }
 
+/***
+ * 升降杆动画
+ * */
 void MainWindow::animateShengjianggan()
 {
     isShengjiangganOpen = !isShengjiangganOpen;
     ui->sceneWidget->AnimateShengjianggan(isShengjiangganOpen);
 }
 
+/***
+ * 左侧板天线水平动画
+ * */
 void MainWindow::animateZuobanHorizontal()
 {
     isZuobanHorizontalOpen = !isZuobanHorizontalOpen;
     ui->sceneWidget->AnimateZuobanHorizontal(isZuobanHorizontalOpen);
 }
 
+/***
+ * 左侧板天线垂直动画
+ * */
 void MainWindow::animateZuobanVertical()
 {
     ui->sceneWidget->AnimateZuobanVertical();
 }
 
+/***
+ * 右侧板天线水平动画
+ * */
 void MainWindow::animateYoubanHorizontal()
 {
     isYoubanHorizontalOpen = !isYoubanHorizontalOpen;
     ui->sceneWidget->AnimateYoubanHorizontal(isYoubanHorizontalOpen);
 }
 
+/***
+ * 右侧板天线垂直动画
+ * */
 void MainWindow::animateYoubanVertical()
 {
     ui->sceneWidget->AnimateYoubanVertical();
 }
 
+/***
+ * 设置模型颜色
+ * */
 void MainWindow::setModelColor()
 {
     auto color = ui->sceneWidget->GetModelColor();
-    QColor qColor = QColorDialog::getColor(colorToQColor(color), nullptr, tr("select model color"), QColorDialog::ColorDialogOptions());
-    ui->sceneWidget->SetModelColor(qColor.redF(), qColor.greenF(), qColor.blueF());
-    auto pixmap = QPixmap(40, 40);
-    pixmap.fill(qColor);
-    setModelColorButton->setIcon(QIcon(pixmap));
+    QColor qColor = QColorDialog::getColor(colorToQColor(color), this, tr("select model color"), QColorDialog::ColorDialogOptions());
+    if (qColor.isValid()) {
+        ui->sceneWidget->SetModelColor(qColor.redF(), qColor.greenF(), qColor.blueF());
+        auto pixmap = QPixmap(40, 40);
+        pixmap.fill(qColor);
+        setModelColorButton->setIcon(QIcon(pixmap));
+    }
 }
 
+/***
+ * 设置模型高亮颜色
+ * */
 void MainWindow::setHighlightColor()
 {
     auto color = ui->sceneWidget->GetHighlightColor();
-    QColor qColor = QColorDialog::getColor(colorToQColor(color), nullptr, tr("select highlight color"), QColorDialog::ColorDialogOptions());
-    ui->sceneWidget->SetHighlightColor(qColor.redF(), qColor.greenF(), qColor.blueF());
-    auto pixmap = QPixmap(40, 40);
-    pixmap.fill(qColor);
-    setHighlightColorButton->setIcon(QIcon(pixmap));
+    QColor qColor = QColorDialog::getColor(colorToQColor(color), this, tr("select highlight color"), QColorDialog::ColorDialogOptions());
+    if (qColor.isValid()) {
+        ui->sceneWidget->SetHighlightColor(qColor.redF(), qColor.greenF(), qColor.blueF());
+        auto pixmap = QPixmap(40, 40);
+        pixmap.fill(qColor);
+        setHighlightColorButton->setIcon(QIcon(pixmap));
+    }
 }
 
+/***
+ * 设置场景背景颜色
+ * */
 void MainWindow::setBackgroundColor()
 {
     auto color = ui->sceneWidget->GetBackgroundColor();
-    QColor qColor = QColorDialog::getColor(colorToQColor(color), nullptr, tr("select background color"), QColorDialog::ColorDialogOptions());
-    ui->sceneWidget->SetBackgroundColor(qColor.redF(), qColor.greenF(), qColor.blueF());
-    auto pixmap = QPixmap(40, 40);
-    pixmap.fill(qColor);
-    setBackgroundColorButton->setIcon(QIcon(pixmap));
+    QColor qColor = QColorDialog::getColor(colorToQColor(color), this, tr("select background color"), QColorDialog::ColorDialogOptions());
+    if (qColor.isValid()) {
+        ui->sceneWidget->SetBackgroundColor(qColor.redF(), qColor.greenF(), qColor.blueF());
+        auto pixmap = QPixmap(40, 40);
+        pixmap.fill(qColor);
+        setBackgroundColorButton->setIcon(QIcon(pixmap));
+    }
 }
 
-void MainWindow::openFile(const QString &fileName)
+/***
+ * 模型加载完毕信号槽
+ * 模型加载完成时，读取模型相机参数并重置按钮状态
+ * */
+void MainWindow::fileOpened(bool success, QString filepath, bool loadTexture)
 {
-    if (ui->sceneWidget->IsImported())
-    {
-        qDebug() << "save cameras to file: " << camerasFilePath << endl;
-        ui->sceneWidget->SaveCameras(camerasFilePath.toStdString());
+    ui->actionOpenFile->setEnabled(true);
+
+    if (!success) {
+        statusLabel->setText(tr("Importing model failed"));
+        QMessageBox::warning(this, tr("ERROR"), tr("open model file failed!"));
+        return;
     }
 
-    ui->sceneWidget->ImportObj(fileName.toStdString(), loadTexture);
-
-    QFileInfo info(fileName);
+    QFileInfo info(filepath);
     camerasFilePath = info.dir().filePath("cameras.txt");
     QFileInfo camerasFileInfo(camerasFilePath);
     if (camerasFileInfo.exists())
@@ -445,5 +674,32 @@ void MainWindow::openFile(const QString &fileName)
     setHighlightColorButton->setIcon(QIcon(pixmap));
     pixmap.fill(colorToQColor(ui->sceneWidget->GetBackgroundColor()));
     setBackgroundColorButton->setIcon(QIcon(pixmap));
+
+    statusLabel->setText(tr("Model imported"));
 }
 
+/***
+ * 打开模型文件
+ * 打开后缀为.obj的模型文件（暂时只支持wavefront公司的obj格式的模型文件）
+ * 异步加载，加载完成后将调用fileOpened信号槽
+ * */
+void MainWindow::openFile(const QString &fileName)
+{
+    if (ui->sceneWidget->IsImported())
+    {
+        qDebug() << "save cameras to file: " << camerasFilePath << endl;
+        ui->sceneWidget->SaveCameras(camerasFilePath.toStdString());
+    }
+
+    statusLabel->setText(tr("Start importing model..."));
+    ui->sceneWidget->ImportObjAsync(fileName, loadTexture);
+    ui->actionOpenFile->setEnabled(false);
+    setModelColorButton->setEnabled(false);
+    animateDaofuButton->setEnabled(false);
+    animateBiantianxianButton->setEnabled(false);
+    animateShengjiangganButton->setEnabled(false);
+    animateZuobanVerticalButton->setEnabled(false);
+    animateZuobanHorizontalButton->setEnabled(false);
+    animateYoubanVerticalButton->setEnabled(false);
+    animateYoubanHorizontalButton->setEnabled(false);
+}

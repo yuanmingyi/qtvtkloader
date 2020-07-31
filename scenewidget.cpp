@@ -1,4 +1,5 @@
 #include "scenewidget.h"
+#include "importworker.h"
 #include "timerutil.h"
 #include "util.h"
 #include "cameraanimation.h"
@@ -27,6 +28,7 @@ SceneWidget::SceneWidget(QWidget *parent)
     _moduleAnimationSpeed = 1;
     _isTiming = false;
     _isFullImported = false;
+    _isImporting = false;
 
     _light->SetLightTypeToHeadlight();
     _light->PositionalOff();
@@ -89,11 +91,21 @@ SceneWidget::SceneWidget(QWidget *parent)
         util::SetupEnvironmentForDepthPeeling(GetRenderWindow(), _renderer, _maxPeels, _occulusionRatio);
     }
 
+    _worker = new ImportWorker();
+    _worker->SetDongfeng(_dongfeng);
+    _worker->moveToThread(&_workThread);
+    QObject::connect(this, SIGNAL(startImport(QString, bool)), _worker, SLOT(start(QString, bool)));
+    QObject::connect(&_workThread, SIGNAL(finished()), _worker, SLOT(deleteLater()));
+    QObject::connect(_worker, SIGNAL(done(bool, QString, bool)), this, SLOT(importDone(bool, QString, bool)));
+    _workThread.start();
+
     resize(800, 600);
 }
 
 SceneWidget::~SceneWidget()
 {
+    _workThread.quit();
+    _workThread.wait();
     delete _dongfeng;
 }
 
@@ -103,11 +115,63 @@ void SceneWidget::SetModuleAnimationSpeed(double speed)
     _dongfeng->SetAnimationSpeed(speed);
 }
 
-void SceneWidget::ImportObj(const std::string& filename, bool loadTexture)
+void SceneWidget::ImportObjAsync(const QString& fileName, bool loadTexture)
 {
+    if (_isImporting) {
+        return;
+    }
+    _isImporting = true;
     _isFullImported = false;
     StartTimer();
-    _dongfeng->ImportObj(filename, _renderer, loadTexture);
+    auto root = _dongfeng->GetRoot();
+    if (root != nullptr) {
+        _renderer->RemoveViewProp(root);
+    }
+    startImport(fileName, loadTexture);
+}
+
+void SceneWidget::importDone(bool success, QString filepath, bool loadTexture)
+{
+    EndTimer("Import time:");
+    if (success) {
+        auto root = _dongfeng->GetRoot();
+        if (root != nullptr) {
+            _renderer->AddViewProp(root);
+        }
+        _isFullImported = true;
+    }
+    _renderer->ResetCamera();
+    _zuodaofu = 0;
+    _youdaofu = 0;
+    _daofu = 0;
+    _biantianxian = 0;
+    _shengjianggan = 0;
+    _zuobanVertical = 0;
+    _youbanVertical = 0;
+    _zuobanHorizontal = 0;
+    _youbanHorizontal = 0;
+    GetInteractor()->Render();
+    _isImporting = false;
+    importComplete(success, filepath, loadTexture);
+}
+
+void SceneWidget::ImportObj(const std::string& filename, bool loadTexture)
+{
+    if (_isImporting) {
+        return;
+    }
+    _isImporting = true;
+    _isFullImported = false;
+    StartTimer();
+    auto root = _dongfeng->GetRoot();
+    if (root != nullptr) {
+        _renderer->RemoveViewProp(root);
+    }
+    _dongfeng->ImportObj(filename, loadTexture);
+    root = _dongfeng->GetRoot();
+    if (root != nullptr) {
+        _renderer->AddViewProp(root);
+    }
     EndTimer("Import time:");
     _isFullImported = true;
     _renderer->ResetCamera();
@@ -121,6 +185,7 @@ void SceneWidget::ImportObj(const std::string& filename, bool loadTexture)
     _zuobanHorizontal = 0;
     _youbanHorizontal = 0;
     GetInteractor()->Render();
+    _isImporting = false;
 }
 
 void SceneWidget::SetOpacity(double opacity)
@@ -202,15 +267,7 @@ void SceneWidget::AnimateHighlight(const std::string& moduleName)
     args.otherOpacity =_dongfeng->IsInsideModule(moduleName) ?
                 InsideSelectedOpacity : _opacity;
     args.time = HighlightAnimationTime;
-    _dongfeng->AnimateHighlight(moduleName, DongfengVis::HighlightArguments(_highlightColor));
-    GetInteractor()->Render();
-}
-
-// Slots
-void SceneWidget::zoomToExtent()
-{
-    std::cout << "zoom to extent" << std::endl;
-    this->_renderer->ResetCamera();
+    _dongfeng->AnimateHighlight(moduleName, args);
     GetInteractor()->Render();
 }
 
@@ -325,4 +382,10 @@ void SceneWidget::ApplyCamaraInfo(const CameraInfo& cameraInfo)
     camera->SetPosition(cameraInfo.Position);
     camera->SetFocalPoint(cameraInfo.FocalPoint);
     _renderer->ResetCameraClippingRange();
+}
+
+void SceneWidget::ResetCamera()
+{
+    _renderer->ResetCamera();
+    GetInteractor()->Render();
 }

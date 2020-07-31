@@ -1,7 +1,7 @@
 #ifndef SCENEWIDGET_H
 #define SCENEWIDGET_H
 
-#ifdef WIN32
+#ifdef Q_OS_WIN
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
 #pragma comment(lib, "Advapi32.lib")
@@ -13,9 +13,11 @@
 #include <QObject>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
+#include <QThread>
 #include "timerutil.h"
 #include "dongfengvis.h"
 #include "cameraanimation.h"
+#include "importworker.h"
 
 /*!
  * \brief The SceneWidget class
@@ -59,6 +61,13 @@ public:
      * \param loadTexture: \c true同时导入贴图文件，\c false不导入贴图文件（贴图文件为jpg或者png在纹理文件(.mtl)中指定，必须放在模型文件同一目录下
     */
     void ImportObj(const std::string& fileName, bool loadTexture = false);
+
+    /*!
+     * \brief ImportObjAsync 异步导入模型文件，导入完成将触发importComplete信号
+     * \param fileName 文件路径
+     * \param loadTexture 是否同时导入贴图文件
+     */
+    void ImportObjAsync(const QString& fileName, bool loadTexture = false);
 
     /*!
      * \fn const std::vector<std::string>& SceneWidget::GetPickableItems() const
@@ -373,14 +382,35 @@ public:
     /// filepath: 要保存的文件路径。文件内容将被覆盖
     void SaveCameras(const std::string& filepath);
 
-public slots:
-    //! Zoom to the extent of the data set in the scene
-    void zoomToExtent();
+    ///
+    /// \brief ResetCamera: 重置相机位置和角度来完整的展示车辆
+    ///
+    void ResetCamera();
 
 signals:
-    void pickedModuleChanged(const std::string& moduleName);
+    ///
+    /// \brief importComplete 加载模型完成
+    /// \param success \c true表示加载成功，\c false表示加载失败
+    /// \param filepath 加载模型的文件路径
+    /// \param loadTexture 是否加载纹理贴图
+    ///
+    void importComplete(bool success, QString filepath, bool loadTexture);
+
+    ///
+    /// \brief startImport 发送异步加载模型信号
+    /// \param filepath 模型文件路径
+    /// \param loadTexture 是否加载纹理贴图
+    ///
+    void startImport(QString filepath, bool loadTexture);
+
+public slots:
+    void importDone(bool success, QString filepath, bool loadTexture);
 
 private:
+    ImportWorker *_worker;
+    QThread _workThread;
+    bool _isImporting;
+
     void StartTimer();
     void EndTimer(const std::string& context = "time: ");
     void UpdateDepthRendering();

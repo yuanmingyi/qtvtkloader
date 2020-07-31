@@ -25,8 +25,8 @@ void DongfengAnimation::Add(std::function<void(double)> updateStateFunc, double 
     vtkNew<DongfengAnimationCue> cue;
     cue->SetUpdateMethod(updateStateFunc, startValue, endValue, startTime, endTime);
     AddCue(cue);
-    if (_speed > 0 && endTime > startTime) {
-        auto fulltime = (endValue - startValue) / _speed / (endTime - startTime);
+    if (_speed > 0.001 && endTime > startTime) {
+        auto fulltime = fabs(endValue - startValue) / _speed / (endTime - startTime);
         if (fulltime > _time) {
             _time = fulltime;
             SetEndTime(_time);

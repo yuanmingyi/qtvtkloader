@@ -31,9 +31,9 @@ include_directories(
 
 # List source files & resources
 set (LibSources
-    scenewidget.cpp cameraanimation.cpp objimporter.cpp dongfengvis.cpp dongfenganimation.cpp animationsceneobserver.cpp dongfenganimationcue.cpp)
+    scenewidget.cpp cameraanimation.cpp objimporter.cpp dongfengvis.cpp dongfenganimation.cpp animationsceneobserver.cpp dongfenganimationcue.cpp importworker.cpp)
 set (LibHeaders
-    scenewidget.h timerutil.h util.h cameraanimation.h objimporter.h stringutil.h dongfengvis.h dongfenganimation.h animationsceneobserver.h dongfenganimationcue.h)
+    scenewidget.h timerutil.h util.h cameraanimation.h objimporter.h stringutil.h dongfengvis.h dongfenganimation.h animationsceneobserver.h dongfenganimationcue.h importworker.h)
 set (DemoSources
     main.cpp mainwindow.cpp mainwindow.h)
 file (GLOB Resources *.qrc)
