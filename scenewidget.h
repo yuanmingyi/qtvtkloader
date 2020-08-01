@@ -280,8 +280,17 @@ public:
     void AnimateYoubanVerticalD(double start, double end, bool updateCamera = false) { AnimateYoubanVertical(start / 90, end / 90, updateCamera); }
 
     ///
+    /// \brief MoveZuodaofuTo 旋转左倒伏到目标位置
+    /// \param goal 要旋转到的位置，范围0-1，0表示0度位置，1表示90度位置
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveZuodaofuTo(double goal, bool updateCamera = true) { AnimateZuodaofu(_zuodaofu, goal, updateCamera); }
 
+    ///
+    /// \brief MoveYoudaofuTo 旋转右倒伏到目标位置
+    /// \param goal 要旋转到的位置，范围0-1，0表示0度位置，1表示90度位置
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveYoudaofuTo(double goal, bool updateCamera = true) { AnimateYoudaofu(_youdaofu, goal, updateCamera); }
 
     void MoveDaofuTo(double goal, bool updateCamera = true) { AnimateDaofu(_daofu, goal, updateCamera); }
@@ -298,9 +307,18 @@ public:
 
     void MoveYoubanHorizontalTo(double goal, bool updateCamera = false) { AnimateYoubanHorizontal(_youbanHorizontal, goal, updateCamera); }
 
-
+    ///
+    /// \brief MoveZuodaofu 旋转左倒伏指定角度
+    /// \param goal 要旋转的距离，范围-1到1，-1表示-90度，1表示90度
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveZuodaofu(double offset, bool updateCamera = true) { MoveZuodaofuTo(_zuodaofu + offset, updateCamera); }
 
+    ///
+    /// \brief MoveYoudaofu 旋转右倒伏指定角度
+    /// \param goal 要旋转的距离，范围-1到1，-1表示-90度，1表示90度
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveYoudaofu(double offset, bool updateCamera = true) { MoveYoudaofuTo(_youdaofu + offset, updateCamera); }
 
     void MoveDaofu(double offset, bool updateCamera = true) { MoveDaofuTo(_daofu + offset, updateCamera); }
@@ -318,8 +336,17 @@ public:
     void MoveYoubanHorizontal(double offset, bool updateCamera = false) { MoveYoubanHorizontalTo(_youbanHorizontal + offset, updateCamera); }
 
     ///
+    /// \brief MoveZuodaofuD 旋转左倒伏指定角度
+    /// \param goal 要旋转的角度，范围-90到90，单位角度
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveZuodaofuD(double offset, bool updateCamera = true) { MoveZuodaofu(offset / 90, updateCamera); }
 
+    ///
+    /// \brief MoveYoudaofu 旋转右倒伏指定角度
+    /// \param goal 要旋转的角度，范围-90到90，单位角度
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveYoudaofuD(double offset, bool updateCamera = true) { MoveYoudaofu(offset / 90, updateCamera); }
 
     void MoveDaofuD(double offset, bool updateCamera = true) { MoveDaofu(offset / 90, updateCamera); }
@@ -337,8 +364,17 @@ public:
     void MoveYoubanHorizontalD(double offset, bool updateCamera = false) { MoveYoubanHorizontal(offset / 90, updateCamera); }
 
     ///
+    /// \brief MoveZuodaofuToD 旋转左倒伏到目标位置
+    /// \param goal 要旋转到的角度位置，范围0-90，单位角度
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveZuodaofuToD(double goal, bool updateCamera = true) { MoveZuodaofuTo(goal / 90, updateCamera); }
 
+    ///
+    /// \brief MoveYoudaofuTo 旋转右倒伏到目标位置
+    /// \param goal 要旋转到的角度位置，范围0-90，单位角度
+    /// \param updateCamera 为true时，动画过程实时调整相机视角使模型保持在相机可视范围
+    ///
     void MoveYoudaofuToD(double goal, bool updateCamera = true) { MoveYoudaofuTo(goal / 90, updateCamera); }
 
     void MoveDaofuToD(double goal, bool updateCamera = true) { MoveDaofuTo(goal / 90, updateCamera); }
