@@ -186,8 +186,8 @@ VTK_Libs = \
 for (lib, VTK_Libs) {
     message("add library: $$lib")
     LIBS += -L$$VTK_DIR/lib/vtk-8.2/ -l$$lib
-    win32:!win32-g++: PRE_TARGETDEPS += $$VTK_DIR/lib/vtk-8.2/$$lib.lib
-    else:unix:!macx|win32-g++: PRE_TARGETDEPS += $$VTK_DIR/lib/vtk-8.2/lib$$lib.a
+    win32:!win32-g++: PRE_TARGETDEPS += $$VTK_DIR/lib/vtk-8.2/$${lib}.lib
+    else:unix:!macx|win32-g++: PRE_TARGETDEPS += $$VTK_DIR/lib/vtk-8.2/lib$${lib}.a
 }
 
 win32: LIBS += -luser32 -lgdi32 -ladvapi32 -lglu32 -lopengl32 -ldbghelp
