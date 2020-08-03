@@ -50,7 +50,9 @@ unix {
     INSTALLS += target
 }
 
-VTK_LIB_DIR = $$PWD/../vtk/lib/
+win32: VTK_DIR = $$PWD/../dongfeng/win32
+else:unix: VTK_DIR = $$PWD/../dongfeng/ubuntu
+
 VTK_Libs = \
     vtkIOInfovis-8.2 \
     vtklibxml2-8.2 \
@@ -183,12 +185,13 @@ VTK_Libs = \
 
 for (lib, VTK_Libs) {
     message("add library: $$lib")
-    LIBS += -L$$VTK_LIB_DIR -l$$lib
-    win32:!win32-g++: PRE_TARGETDEPS += $$VTK_LIB_DIR$$lib.lib
-    else:unix:!macx|win32-g++: PRE_TARGETDEPS += $$VTK_LIB_DIR$$lib.a
+    LIBS += -L$$VTK_DIR/lib/vtk-8.2/ -l$$lib
+    win32:!win32-g++: PRE_TARGETDEPS += $$VTK_DIR/lib/vtk-8.2/$$lib.lib
+    else:unix:!macx|win32-g++: PRE_TARGETDEPS += $$VTK_DIR/lib/vtk-8.2/lib$$lib.a
 }
 
-unix: LIBS += -ldl -lpthread -lm -lGL -lGLU -lXt -lSM -lICE -lX11 -lXext
+win32: LIBS += -luser32 -lgdi32 -ladvapi32 -lglu32 -lopengl32 -ldbghelp
+else:unix: LIBS += -ldl -lpthread -lm -lGL -lGLU -lXt -lSM -lICE -lX11 -lXext
 
-INCLUDEPATH += $$PWD/../vtk/include/vtk-8.2
-DEPENDPATH += $$PWD/../vtk/include/vtk-8.2
+INCLUDEPATH += $$VTK_DIR/include/vtk-8.2
+DEPENDPATH += $$VTK_DIR/include/vtk-8.2

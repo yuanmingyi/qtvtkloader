@@ -1,15 +1,6 @@
 #ifndef SCENEWIDGET_H
 #define SCENEWIDGET_H
 
-#ifdef Q_OS_WIN
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "gdi32.lib")
-#pragma comment(lib, "Advapi32.lib")
-#pragma comment(lib, "glu32.lib")
-#pragma comment(lib, "opengl32.lib")
-#pragma comment(lib, "dbghelp.lib")
-#endif
-
 #include <QObject>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
